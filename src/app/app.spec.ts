@@ -24,17 +24,33 @@ describe('App routes', () => {
     expect(links[0]?.textContent?.trim()).toBe('Start');
   });
 
-  it('walks Start -> choose board -> choose ship colour', async () => {
+  it('walks Start -> choose board -> choose ship colour -> battle', async () => {
     const harness = await RouterTestingHarness.create('/');
+    const root = () => harness.routeNativeElement as HTMLElement;
+    const button = (name: string) =>
+      [...root().querySelectorAll('button')].find(
+        (b) => (b.getAttribute('aria-label') ?? b.textContent?.trim()) === name,
+      );
 
-    (harness.routeNativeElement as HTMLElement).querySelector('a')?.click();
+    root().querySelector('a')?.click();
     await harness.fixture.whenStable();
     expect(heading(harness)).toBe('Choose your board');
 
-    (harness.routeNativeElement as HTMLElement)
-      .querySelector<HTMLButtonElement>('[aria-label="Board option 1"]')
-      ?.click();
+    button('6x6')?.click();
     await harness.fixture.whenStable();
     expect(heading(harness)).toBe('Choose your ship color');
+
+    button('Blue')?.click();
+    await harness.fixture.whenStable();
+    button('Choose the color')?.click();
+    await harness.fixture.whenStable();
+    expect(heading(harness)).toBe('Battle');
+    expect(root().querySelector('#player-F6')).not.toBeNull();
+    expect(root().querySelector('#computer-F6')).not.toBeNull();
+  });
+
+  it('sends /battle back to the board step when setup is incomplete', async () => {
+    const harness = await RouterTestingHarness.create('/battle');
+    expect(heading(harness)).toBe('Choose your board');
   });
 });

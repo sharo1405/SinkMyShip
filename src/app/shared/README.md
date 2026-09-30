@@ -2,12 +2,12 @@
 
 Reusable, stateless building blocks with no knowledge of any particular screen.
 
-| Folder        | What goes here                                                                          |
-| ------------- | --------------------------------------------------------------------------------------- |
+| Folder        | What goes here                                                                           |
+| ------------- | ---------------------------------------------------------------------------------------- |
 | `ui/`         | Presentational components (grid, cell, ship-tray, button): `input()` in, `output()` out. |
-| `directives/` | Attribute directives, e.g. roving-focus for the grid.                                   |
-| `pipes/`      | Pure pipes, e.g. coordinate formatting (`B7`).                                          |
-| `utils/`      | Pure functions with no Angular dependency.                                              |
+| `directives/` | Attribute directives, e.g. roving-focus for the grid.                                    |
+| `pipes/`      | Pure pipes, e.g. coordinate formatting (`B7`).                                           |
+| `utils/`      | Pure functions with no Angular dependency.                                               |
 
 ## Rules
 

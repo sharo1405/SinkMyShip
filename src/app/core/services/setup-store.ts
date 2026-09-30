@@ -1,5 +1,5 @@
 import { computed, Service, signal } from '@angular/core';
-import type { BoardOptionId } from '@core/models/board-option';
+import { BOARD_OPTIONS, type BoardOptionDef, type BoardOptionId } from '@core/models/board-option';
 import { SHIP_COLORS, type ShipColorDef, type ShipColorId } from '@core/models/ship-color';
 
 /**
@@ -13,6 +13,9 @@ export class SetupStore {
 
   readonly boardOption = this.boardOptionState.asReadonly();
   readonly shipColor = this.shipColorState.asReadonly();
+  readonly boardOptionDef = computed<BoardOptionDef | null>(
+    () => BOARD_OPTIONS.find((b) => b.id === this.boardOptionState()) ?? null,
+  );
   readonly shipColorDef = computed<ShipColorDef | null>(
     () => SHIP_COLORS.find((c) => c.id === this.shipColorState()) ?? null,
   );
