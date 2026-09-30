@@ -6,7 +6,7 @@ import {
   type ActivatedRouteSnapshot,
   type RouterStateSnapshot,
 } from '@angular/router';
-import { SetupStore } from '@core/services/setup-store';
+import { SetupStore } from '@core/services/setup-store/setup-store';
 import { setupCompleteGuard } from './setup-complete';
 
 function runGuard(): ReturnType<typeof setupCompleteGuard> {

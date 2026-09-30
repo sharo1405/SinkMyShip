@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { BOARD_OPTIONS, type BoardOptionId } from '@core/models/board-option';
-import { SetupStore } from '@core/services/setup-store';
+import { SetupStore } from '@core/services/setup-store/setup-store';
 import { Tile } from '@shared/ui/tile/tile';
 
 /** Setup step 1: pick a board. Choosing records it and moves on to the ship colour step. */

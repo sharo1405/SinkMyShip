@@ -1,5 +1,5 @@
 import type { Routes } from '@angular/router';
-import { setupCompleteGuard } from '@core/guards/setup-complete';
+import { setupCompleteGuard } from '@core/guards/setup-complete/setup-complete';
 
 export const routes: Routes = [
   {

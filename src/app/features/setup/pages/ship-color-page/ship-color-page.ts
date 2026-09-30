@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { fleetFor } from '@sinkmyship/game';
 import { SHIP_COLORS } from '@core/models/ship-color';
-import { SetupStore } from '@core/services/setup-store';
+import { SetupStore } from '@core/services/setup-store/setup-store';
 import { Button } from '@shared/ui/button/button';
 import { Ship } from '@shared/ui/ship/ship';
 import { Tile } from '@shared/ui/tile/tile';

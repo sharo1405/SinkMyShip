@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import type { BoardOptionId } from '@core/models/board-option';
-import { SetupStore } from '@core/services/setup-store';
+import { SetupStore } from '@core/services/setup-store/setup-store';
 import { ShipColorPage } from './ship-color-page';
 
 async function setup(board: BoardOptionId | null = '6x6') {

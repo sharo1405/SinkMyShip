@@ -4,8 +4,11 @@ import { coordLabel, type Coord } from '@sinkmyship/game';
 /** Which side of the grid shows the row numbers. */
 export type RowLabelSide = 'start' | 'end';
 
-/** What a cell shows: open water, a placed ship, or a block of the ship being placed. */
-export type CellMark = 'water' | 'ship' | 'draft';
+/**
+ * What a cell shows: open water, a placed ship, a block of the ship being placed, or the
+ * result of a shot at it (a sunk ship's blocks show `sunk`).
+ */
+export type CellMark = 'water' | 'ship' | 'draft' | 'miss' | 'hit' | 'sunk';
 
 interface BoardCell {
   readonly at: Coord;
@@ -14,6 +17,7 @@ interface BoardCell {
   /** Unique DOM id: `<idPrefix>-<coord>`, e.g. `player-B3`. */
   readonly id: string;
   readonly mark: CellMark;
+  readonly glyph: string;
   readonly rejected: boolean;
   /** Accessible name, e.g. `B3, ship`. */
   readonly name: string;
@@ -28,6 +32,19 @@ const MARK_NAMES: Record<CellMark, string> = {
   water: 'water',
   ship: 'ship',
   draft: 'ship being placed',
+  miss: 'miss',
+  hit: 'hit',
+  sunk: 'sunk',
+};
+
+/** Shape drawn in shot cells, so results never rely on colour alone. */
+const MARK_GLYPHS: Record<CellMark, string> = {
+  water: '',
+  ship: '',
+  draft: '',
+  miss: '•',
+  hit: '✕',
+  sunk: '✕',
 };
 
 const key = ({ row, col }: Coord): string => `${row},${col}`;
@@ -37,10 +54,11 @@ const key = ({ row, col }: Coord): string => `${row},${col}`;
  * rows numbered 1, 2, 3… down the `rowLabelSide` (left for `start`, right for `end`).
  * Every cell gets a page-unique id built from `idPrefix` and its coordinate.
  *
- * Ship and draft cells are filled with `shipColor`; the `rejected` cell gets a dashed red
- * border (dashed, so it doesn't rely on colour alone). With `interactive`, every cell is a
- * button that emits `cellClick`. Rendered as a table so screen readers announce each cell's
- * column and row headers.
+ * Ship and draft cells are filled with `shipColor`; shots show grey with a dot (miss) or
+ * red with a cross (hit, sunk). The `rejected` cell gets a dashed red border (dashed, so it
+ * doesn't rely on colour alone). With `interactive`, every cell is a button that emits
+ * `cellClick`. Rendered as a table so screen readers announce each cell's column and row
+ * headers.
  */
 @Component({
   selector: 'app-board',
@@ -58,6 +76,9 @@ export class Board {
   readonly rowLabelSide = input<RowLabelSide>('start');
   readonly shipCells = input<readonly Coord[]>([]);
   readonly draftCells = input<readonly Coord[]>([]);
+  readonly missCells = input<readonly Coord[]>([]);
+  readonly hitCells = input<readonly Coord[]>([]);
+  readonly sunkCells = input<readonly Coord[]>([]);
   readonly rejected = input<Coord | null>(null);
   readonly shipColor = input<string | null>(null);
   readonly interactive = input(false, { transform: booleanAttribute });
@@ -71,8 +92,18 @@ export class Board {
 
   protected readonly rows = computed<readonly BoardRow[]>(() => {
     const prefix = this.idPrefix();
-    const ships = new Set(this.shipCells().map(key));
-    const draft = new Set(this.draftCells().map(key));
+    // Later layers win: a hit ship cell shows the hit, not the ship.
+    const marks = new Map<string, CellMark>();
+    const layers: [CellMark, readonly Coord[]][] = [
+      ['ship', this.shipCells()],
+      ['draft', this.draftCells()],
+      ['miss', this.missCells()],
+      ['hit', this.hitCells()],
+      ['sunk', this.sunkCells()],
+    ];
+    for (const [mark, cells] of layers) {
+      for (const c of cells) marks.set(key(c), mark);
+    }
     const rejected = this.rejected();
     const rejectedKey = rejected ? key(rejected) : null;
 
@@ -82,13 +113,14 @@ export class Board {
         const at = { row, col };
         const coord = coordLabel(at);
         const k = key(at);
-        const mark: CellMark = ships.has(k) ? 'ship' : draft.has(k) ? 'draft' : 'water';
+        const mark = marks.get(k) ?? 'water';
         const isRejected = k === rejectedKey;
         return {
           at,
           coord,
           id: `${prefix}-${coord}`,
           mark,
+          glyph: MARK_GLYPHS[mark],
           rejected: isRejected,
           name: `${coord}, ${MARK_NAMES[mark]}${isRejected ? ', not allowed' : ''}`,
         };

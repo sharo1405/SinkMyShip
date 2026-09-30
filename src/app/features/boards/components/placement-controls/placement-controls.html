@@ -1,0 +1,28 @@
+<div class="tray" role="group" aria-label="Your ships">
+  @for (ship of tray(); track ship.id) {
+    <button
+      type="button"
+      class="ship-pick"
+      [class.selected]="ship.selected"
+      [attr.aria-pressed]="ship.selected"
+      [disabled]="ship.placed"
+      (click)="placement.selectShip(ship.id)"
+    >
+      <app-ship [length]="ship.length" [label]="ship.label" [color]="shipColor()" />
+    </button>
+  }
+</div>
+<div class="actions">
+  <button
+    appButton
+    type="button"
+    [disabled]="!placement.canRemove()"
+    [attr.aria-pressed]="placement.removing()"
+    (click)="placement.toggleRemoving()"
+  >
+    {{ placement.removing() ? 'Cancel remove' : 'Remove' }}
+  </button>
+  @if (placement.canReady()) {
+    <button appButton type="button" (click)="placement.ready()">Ready</button>
+  }
+</div>

@@ -30,6 +30,9 @@
             [attr.data-coord]="cell.coord"
             [class.ship]="cell.mark === 'ship'"
             [class.draft]="cell.mark === 'draft'"
+            [class.miss]="cell.mark === 'miss'"
+            [class.hit]="cell.mark === 'hit'"
+            [class.sunk]="cell.mark === 'sunk'"
             [class.rejected]="cell.rejected"
           >
             @if (interactive()) {
@@ -38,8 +41,11 @@
                 class="hit-area"
                 [attr.aria-label]="cell.name"
                 (click)="cellClick.emit(cell.at)"
-              ></button>
+              >
+                <span aria-hidden="true">{{ cell.glyph }}</span>
+              </button>
             } @else if (cell.mark !== 'water') {
+              <span aria-hidden="true">{{ cell.glyph }}</span>
               <span class="visually-hidden">{{ cell.name }}</span>
             }
           </td>

@@ -27,6 +27,9 @@ th {
   width: var(--cell-size);
   height: var(--cell-size);
   padding: 0;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
   border-radius: 0.25rem;
   background: var(--color-water);
   box-shadow: inset 0 0 0 1px var(--color-grid-line);
@@ -45,6 +48,21 @@ th {
   box-shadow: inset 0 0 0 2px var(--ship-color, var(--color-ship-neutral));
 }
 
+.cell.miss {
+  background: var(--color-miss);
+  color: var(--color-text);
+}
+
+.cell.hit,
+.cell.sunk {
+  background: var(--color-hit);
+  color: #fff;
+}
+
+.cell.sunk {
+  box-shadow: inset 0 0 0 3px var(--color-text);
+}
+
 .cell.rejected {
   outline: 3px dashed var(--color-invalid);
   outline-offset: -3px;
@@ -58,6 +76,8 @@ th {
   border: 0;
   border-radius: inherit;
   background: transparent;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
 }
 

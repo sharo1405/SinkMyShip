@@ -1,5 +1,5 @@
 <main class="battle">
-  @let remaining = game.remaining();
+  @let remaining = placement.remaining();
   @if (remaining !== null) {
     <input
       type="text"
@@ -9,67 +9,23 @@
       [value]="'Remaining: ' + remaining"
     />
   }
-
-  @if (timeLeft(); as timeLeft) {
-    <div class="time-left" role="timer" aria-label="Time left to place your ships">
-      Time left: {{ timeLeft }}
-    </div>
-  }
+  <app-game-clock />
 
   <h1>Battle</h1>
   @if (size(); as size) {
     <div class="boards">
       <section class="side">
-        <app-board
-          idPrefix="player"
-          label="Your board"
-          rowLabelSide="start"
-          [size]="size"
-          [shipCells]="playerShipCells()"
-          [draftCells]="game.draft()"
-          [rejected]="game.rejected()"
-          [shipColor]="shipColor()"
-          [interactive]="boardInteractive()"
-          (cellClick)="game.clickCell($event)"
-        />
-        <div class="tray" role="group" aria-label="Your ships">
-          @for (ship of tray(); track ship.id) {
-            <button
-              type="button"
-              class="ship-pick"
-              [class.selected]="ship.selected"
-              [attr.aria-pressed]="ship.selected"
-              [disabled]="ship.placed || game.placementOver()"
-              (click)="game.selectShip(ship.id)"
-            >
-              <app-ship [length]="ship.length" [label]="ship.label" [color]="shipColor()" />
-            </button>
-          }
-        </div>
-        <button
-          appButton
-          type="button"
-          [disabled]="!game.canRemove()"
-          [attr.aria-pressed]="game.removing()"
-          (click)="game.toggleRemoving()"
-        >
-          {{ game.removing() ? 'Cancel remove' : 'Remove' }}
-        </button>
-        <p class="hint" role="status">
-          @if (game.placementOver()) {
-            Time is up. Your remaining ships were placed for you.
-          } @else if (game.removing()) {
-            Click a ship on your board to remove it.
-          }
-        </p>
+        <app-player-board [size]="size" [shipColor]="shipColor()" />
+        @if (game.phase() === 'placing') {
+          <app-placement-controls [shipColor]="shipColor()" />
+        }
       </section>
-      <app-board
-        idPrefix="computer"
-        label="Computer's board"
-        rowLabelSide="end"
-        [size]="size"
-        [shipCells]="computerShipCells()"
-      />
+      <app-computer-board [size]="size" />
     </div>
+
+    <app-battle-status />
+    @if (game.phase() === 'over') {
+      <button appButton type="button" (click)="playAgain()">Play again</button>
+    }
   }
 </main>

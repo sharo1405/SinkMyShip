@@ -4,11 +4,41 @@ App-wide singletons, instantiated once per application (per request under SSR).
 
 | Folder      | What goes here                                                                                                                                         |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `services/` | `@Service()` singletons (auto-provided in root): `GameStore` (signal store over `@sinkmyship/game`), AI turn scheduler, persistence.                   |
+| `services/` | `@Service()` singletons (auto-provided in root). The game services are listed below.                                                                   |
 | `guards/`   | Functional route guards (`CanActivateFn`), e.g. block `/battle` while the phase is `placing`.                                                          |
 | `models/`   | UI-only types and `InjectionToken`s (config, RNG). Game types (`Coord`, `Seat`, `Phase`, ...) come from `@sinkmyship/game`. Never redeclare them here. |
+| `utils/`    | Plain classes and functions used by services, e.g. `Countdown`.                                                                                        |
+
+Each service, util and guard has its own folder, with its test beside it:
+`services/game-store/game-store.ts` and `services/game-store/game-store.spec.ts`.
 
 Add `interceptors/` when an HTTP backend exists.
+
+## Game services
+
+| Service           | Owns                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| `GameStore`       | The game state. Wraps every rule call from `@sinkmyship/game`; no timers, no decisions.         |
+| `PlayerPlacement` | The player's placement: selected ship, blocks, Remove, Ready, the five-minute clock.            |
+| `PlayerTurn`      | The player's battle turn: firing at the computer's board and the 40-second turn clock.          |
+| `ComputerPlayer`  | The computer: random fleet, firing three seconds into its turn. Aiming is `chooseShot` (rules). |
+| `MatchController` | Starts a game and decides who acts next. Swap `ComputerPlayer` for a network seat here later.   |
+
+Placement, turn and computer services take an `onDone` callback from `MatchController` rather than
+injecting it, so the dependencies only point one way.
+
+### Shared by the player and the computer
+
+Logic both sides need lives once, here, not in each service:
+
+| File                        | Shared piece                                                                       |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| `models/seat-controller.ts` | `SeatController`: what any side implements to take a battle turn (`start`/`stop`). |
+| `models/seats.ts`           | `PLAYER` and `COMPUTER` seat numbers.                                              |
+| `utils/turn-handoff/`       | `TurnHandoff`: holds the "I'm finished" callback and calls it exactly once.        |
+| `utils/countdown/`          | `Countdown`: the placement and turn clocks.                                        |
+| `utils/platform/`           | `injectIsBrowser()`: clocks and computer moves only run in the browser.            |
+| `GameStore.isTurnOf(seat)`  | Whether the battle is on and it's that seat's turn.                                |
 
 ## Rules
 

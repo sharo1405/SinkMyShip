@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { SetupStore } from '@core/services/setup-store';
+import { SetupStore } from '@core/services/setup-store/setup-store';
 import { BoardSizePage } from './board-size-page';
 
 describe('BoardSizePage', () => {
