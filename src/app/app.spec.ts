@@ -1,24 +1,40 @@
 import { TestBed } from '@angular/core/testing';
-import { App } from './app';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { routes } from './app.routes';
 
-describe('App', () => {
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [App],
-    })
-      .compileComponents();
+function heading(harness: RouterTestingHarness): string | undefined {
+  return (harness.routeNativeElement as HTMLElement).querySelector('h1')?.textContent?.trim();
+}
+
+describe('App routes', () => {
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideRouter(routes, withComponentInputBinding())],
+    });
   });
 
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+  it('shows only the Welcome heading and a Start link on the default route', async () => {
+    const harness = await RouterTestingHarness.create('/');
+    const root = harness.routeNativeElement as HTMLElement;
+
+    expect(heading(harness)).toBe('Welcome');
+    const links = root.querySelectorAll('a');
+    expect(links.length).toBe(1);
+    expect(links[0]?.textContent?.trim()).toBe('Start');
   });
 
-  it('should render title', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, sinkmyship-web');
+  it('walks Start -> choose board -> choose ship colour', async () => {
+    const harness = await RouterTestingHarness.create('/');
+
+    (harness.routeNativeElement as HTMLElement).querySelector('a')?.click();
+    await harness.fixture.whenStable();
+    expect(heading(harness)).toBe('Choose your board');
+
+    (harness.routeNativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('[aria-label="Board option 1"]')
+      ?.click();
+    await harness.fixture.whenStable();
+    expect(heading(harness)).toBe('Choose your ship color');
   });
 });

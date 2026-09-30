@@ -1,0 +1,24 @@
+<main class="step">
+  <h1>Choose your ship color</h1>
+
+  <div class="tiles" role="group" aria-label="Ship color">
+    @for (color of colors; track color.id) {
+      <button
+        appTile
+        type="button"
+        [attr.aria-label]="color.label"
+        [color]="color.value"
+        [pressed]="store.shipColor() === color.id"
+        (click)="store.chooseShipColor(color.id)"
+      ></button>
+    }
+  </div>
+
+  <div class="ships">
+    @for (ship of ships(); track ship.length) {
+      <app-ship [length]="ship.length" [label]="ship.label" [color]="store.shipColorDef()?.value ?? null" />
+    }
+  </div>
+
+  <button appButton type="button" [disabled]="!store.shipColor()">Choose the color</button>
+</main>

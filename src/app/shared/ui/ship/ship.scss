@@ -1,0 +1,18 @@
+:host {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.block {
+  width: var(--ship-block-size, 2.5rem);
+  aspect-ratio: 1;
+  border-radius: 0.375rem;
+  background: var(--ship-color, var(--color-ship-neutral));
+  transition: background-color 150ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block {
+    transition: none;
+  }
+}

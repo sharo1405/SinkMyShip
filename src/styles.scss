@@ -1,1 +1,38 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global design tokens. Components read these custom properties so themes switch at runtime. */
+:root {
+  color-scheme: light dark;
+  --color-bg: #f4f7fb;
+  --color-text: #0f1b2d;
+  --color-accent: #1d5fd1;
+  --color-accent-strong: #1549a3;
+  --color-on-accent: #ffffff;
+  --color-focus: #f5a524;
+  --color-selected: #facc15;
+  --color-tile: #c9d4e3;
+  --color-ship-neutral: #9aa7b8;
+  --ship-blue: #2563eb;
+  --ship-green: #16a34a;
+  --ship-purple: #7e22ce;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0b1320;
+    --color-text: #e6edf7;
+    --color-accent: #4c8dff;
+    --color-accent-strong: #7aabff;
+    --color-on-accent: #0b1320;
+    --color-tile: #2a3a52;
+    --color-ship-neutral: #4a5a70;
+    --ship-blue: #3b82f6;
+    --ship-green: #22c55e;
+    --ship-purple: #a855f7;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
