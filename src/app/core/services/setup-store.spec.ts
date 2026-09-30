@@ -12,11 +12,13 @@ describe('SetupStore', () => {
     expect(store.boardOption()).toBeNull();
     expect(store.shipColor()).toBeNull();
     expect(store.shipColorDef()).toBeNull();
+    expect(store.boardOptionDef()).toBeNull();
   });
 
-  it('records the board choice', () => {
-    store.chooseBoard('option-2');
-    expect(store.boardOption()).toBe('option-2');
+  it('records the board choice and resolves its size', () => {
+    store.chooseBoard('6x6');
+    expect(store.boardOption()).toBe('6x6');
+    expect(store.boardOptionDef()?.size).toBe(6);
   });
 
   it('records the ship colour and resolves its definition', () => {

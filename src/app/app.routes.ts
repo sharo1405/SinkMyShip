@@ -1,4 +1,5 @@
 import type { Routes } from '@angular/router';
+import { setupCompleteGuard } from '@core/guards/setup-complete';
 
 export const routes: Routes = [
   {
@@ -11,6 +12,13 @@ export const routes: Routes = [
   {
     path: 'setup',
     loadChildren: () => import('@features/setup/setup.routes').then((m) => m.SETUP_ROUTES),
+  },
+  {
+    path: 'battle',
+    title: 'Battle | SinkMyShip',
+    canActivate: [setupCompleteGuard],
+    loadComponent: () =>
+      import('@features/boards/pages/battle-page/battle-page').then((m) => m.BattlePage),
   },
   { path: '**', redirectTo: '' },
 ];

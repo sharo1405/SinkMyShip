@@ -8,16 +8,14 @@ describe('BoardSizePage', () => {
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
   });
 
-  it('shows three board tiles', async () => {
+  it('shows 4x4, 6x6 and 8x8 board tiles', async () => {
     const fixture = TestBed.createComponent(BoardSizePage);
     await fixture.whenStable();
     const group = (fixture.nativeElement as HTMLElement).querySelector('[role="group"]');
 
     expect(group?.getAttribute('aria-label')).toBe('Board');
-    const labels = [...(group?.querySelectorAll('button') ?? [])].map((b) =>
-      b.getAttribute('aria-label'),
-    );
-    expect(labels).toEqual(['Board option 1', 'Board option 2', 'Board option 3']);
+    const labels = [...(group?.querySelectorAll('button') ?? [])].map((b) => b.textContent?.trim());
+    expect(labels).toEqual(['4x4', '6x6', '8x8']);
   });
 
   it('records the choice and navigates to the colour step', async () => {
@@ -25,11 +23,11 @@ describe('BoardSizePage', () => {
     const fixture = TestBed.createComponent(BoardSizePage);
     await fixture.whenStable();
 
-    (fixture.nativeElement as HTMLElement)
-      .querySelector<HTMLButtonElement>('[aria-label="Board option 2"]')
+    [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')]
+      .find((b) => b.textContent?.trim() === '6x6')
       ?.click();
 
-    expect(TestBed.inject(SetupStore).boardOption()).toBe('option-2');
+    expect(TestBed.inject(SetupStore).boardOption()).toBe('6x6');
     expect(navigate).toHaveBeenCalledWith(['/setup/color']);
   });
 });

@@ -15,10 +15,16 @@
   </div>
 
   <div class="ships">
-    @for (ship of ships(); track ship.length) {
-      <app-ship [length]="ship.length" [label]="ship.label" [color]="store.shipColorDef()?.value ?? null" />
+    @for (ship of ships(); track ship.id) {
+      <app-ship
+        [length]="ship.length"
+        [label]="ship.label"
+        [color]="store.shipColorDef()?.value ?? null"
+      />
     }
   </div>
 
-  <button appButton type="button" [disabled]="!store.shipColor()">Choose the color</button>
+  <button appButton type="button" [disabled]="!store.shipColor()" (click)="confirm()">
+    Choose the color
+  </button>
 </main>

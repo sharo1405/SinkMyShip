@@ -2,10 +2,10 @@
 
 App-wide singletons, instantiated once per application (per request under SSR).
 
-| Folder      | What goes here                                                                                           |
-| ----------- | -------------------------------------------------------------------------------------------------------- |
-| `services/` | `@Service()` singletons (auto-provided in root): `GameStore` (signal store over `@sinkmyship/game`), AI turn scheduler, persistence. |
-| `guards/`   | Functional route guards (`CanActivateFn`), e.g. block `/battle` while the phase is `placing`.           |
+| Folder      | What goes here                                                                                                                                         |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `services/` | `@Service()` singletons (auto-provided in root): `GameStore` (signal store over `@sinkmyship/game`), AI turn scheduler, persistence.                   |
+| `guards/`   | Functional route guards (`CanActivateFn`), e.g. block `/battle` while the phase is `placing`.                                                          |
 | `models/`   | UI-only types and `InjectionToken`s (config, RNG). Game types (`Coord`, `Seat`, `Phase`, ...) come from `@sinkmyship/game`. Never redeclare them here. |
 
 Add `interceptors/` when an HTTP backend exists.

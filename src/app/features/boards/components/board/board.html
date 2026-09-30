@@ -1,0 +1,53 @@
+<table class="board">
+  <caption>
+    {{
+      label()
+    }}
+  </caption>
+  <thead>
+    <tr>
+      @if (rowLabelSide() === 'start') {
+        <td class="corner"></td>
+      }
+      @for (col of columns(); track col) {
+        <th scope="col">{{ col }}</th>
+      }
+      @if (rowLabelSide() === 'end') {
+        <td class="corner"></td>
+      }
+    </tr>
+  </thead>
+  <tbody>
+    @for (row of rows(); track row.number) {
+      <tr>
+        @if (rowLabelSide() === 'start') {
+          <th scope="row">{{ row.number }}</th>
+        }
+        @for (cell of row.cells; track cell.id) {
+          <td
+            class="cell"
+            [id]="cell.id"
+            [attr.data-coord]="cell.coord"
+            [class.ship]="cell.mark === 'ship'"
+            [class.draft]="cell.mark === 'draft'"
+            [class.rejected]="cell.rejected"
+          >
+            @if (interactive()) {
+              <button
+                type="button"
+                class="hit-area"
+                [attr.aria-label]="cell.name"
+                (click)="cellClick.emit(cell.at)"
+              ></button>
+            } @else if (cell.mark !== 'water') {
+              <span class="visually-hidden">{{ cell.name }}</span>
+            }
+          </td>
+        }
+        @if (rowLabelSide() === 'end') {
+          <th scope="row">{{ row.number }}</th>
+        }
+      </tr>
+    }
+  </tbody>
+</table>

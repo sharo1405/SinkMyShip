@@ -1,18 +1,22 @@
+import type { BoardSize } from '@sinkmyship/game';
+
 /** A selectable board choice on setup step 1. */
 export interface BoardOptionDef {
   readonly id: string;
-  /** Accessible name; the tiles themselves are unlabelled squares. */
+  /** Number of rows and columns; boards are square. Must be a size the rules support. */
+  readonly size: BoardSize;
+  /** Visible tile text, also the tile's accessible name. */
   readonly label: string;
 }
 
 /**
- * Placeholder board choices. Real board sizes aren't decided yet; when they are, the sizes
- * belong in the `src/game` rules package and these entries should point at them.
+ * Board sizes offered in setup. `size` is typed by the rules package, so an entry for a size
+ * without a fleet fails to compile.
  */
 export const BOARD_OPTIONS = [
-  { id: 'option-1', label: 'Board option 1' },
-  { id: 'option-2', label: 'Board option 2' },
-  { id: 'option-3', label: 'Board option 3' },
+  { id: '4x4', size: 4, label: '4x4' },
+  { id: '6x6', size: 6, label: '6x6' },
+  { id: '8x8', size: 8, label: '8x8' },
 ] as const satisfies readonly BoardOptionDef[];
 
 export type BoardOptionId = (typeof BOARD_OPTIONS)[number]['id'];
