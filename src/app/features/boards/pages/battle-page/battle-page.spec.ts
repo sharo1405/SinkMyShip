@@ -50,12 +50,14 @@ async function setup(board: BoardOptionId) {
     await new Promise((resolve) => setTimeout(resolve, 0));
     await fixture.whenStable();
   };
-  /** Places the 4x4 fleet: 2-block on A1-B1, 3-block on A3-C3. */
+  /** Places the 6x6 fleet: 2-block on A1-B1, 3-block on A3-C3, 4-block on A5-D5. */
   const placeFleet = async () => {
     await click(trayShip('2-block ship'));
     for (const c of ['A1', 'B1']) await click(cell(c));
     await click(trayShip('3-block ship'));
     for (const c of ['A3', 'B3', 'C3']) await click(cell(c));
+    await click(trayShip('4-block ship'));
+    for (const c of ['A5', 'B5', 'C5', 'D5']) await click(cell(c));
   };
   const game = TestBed.inject(GameStore);
   return {
@@ -107,7 +109,7 @@ describe('BattlePage', () => {
   });
 
   it('selects a ship, counts down while placing it block by block, then hides the counter', async () => {
-    const { root, trayShip, cell, remaining, click } = await setup('4x4');
+    const { root, trayShip, cell, remaining, click } = await setup('6x6');
 
     await click(trayShip('3-block ship'));
     expect(trayShip('3-block ship')?.getAttribute('aria-pressed')).toBe('true');
@@ -129,7 +131,7 @@ describe('BattlePage', () => {
   });
 
   it('borders a diagonal block red and does not count it', async () => {
-    const { root, trayShip, cell, remaining, click } = await setup('4x4');
+    const { root, trayShip, cell, remaining, click } = await setup('6x6');
 
     await click(trayShip('2-block ship'));
     await click(cell('B2'));
@@ -144,7 +146,7 @@ describe('BattlePage', () => {
   });
 
   it('keeps Remove disabled until a whole ship is placed, then removes the clicked ship', async () => {
-    const { root, trayShip, cell, removeButton, status, click } = await setup('4x4');
+    const { root, trayShip, cell, removeButton, status, click } = await setup('6x6');
     expect(removeButton()?.disabled).toBe(true);
 
     await click(trayShip('2-block ship'));
@@ -179,7 +181,7 @@ describe('BattlePage', () => {
     expect(status()).toBe(
       "Time is up. Your remaining ships were placed for you. Your turn: fire at the computer's board.",
     );
-    expect(root.querySelectorAll('[id^="player-"].ship').length).toBe(3 + 4 + 5);
+    expect(root.querySelectorAll('[id^="player-"].ship').length).toBe(2 + 3 + 4);
     expect(root.querySelector('#player-A1 button')).toBeNull();
     expect(trayShip('3-block ship')).toBeUndefined();
     expect(removeButton()).toBeUndefined();
@@ -187,7 +189,7 @@ describe('BattlePage', () => {
   });
 
   it('shows Ready only once every ship is placed, and Ready starts the battle', async () => {
-    const { root, button, status, timer, click, placeFleet } = await setup('4x4');
+    const { root, button, status, timer, click, placeFleet } = await setup('6x6');
     expect(button('Ready')).toBeUndefined();
 
     await placeFleet();
@@ -197,19 +199,19 @@ describe('BattlePage', () => {
     expect(timer()).toBe('Your turn: 0:40');
     expect(root.querySelector('[aria-label="Your ships"]')).toBeNull();
     expect(root.querySelectorAll('[id^="computer-"].ship').length).toBe(0);
-    expect(root.querySelectorAll('[id^="computer-"] button').length).toBe(16);
+    expect(root.querySelectorAll('[id^="computer-"] button').length).toBe(36);
   });
 
   it('marks a miss grey and a hit red on both boards, turn by turn', async () => {
     const { root, game, button, enemyCell, status, timer, click, computerTurn, placeFleet } =
-      await setup('4x4');
+      await setup('6x6');
     await placeFleet();
     await click(button('Ready'));
 
     const shipCells = game.computerBoard()?.ships.flatMap((s) => s.cells) ?? [];
     const isShip = (c: Coord) => shipCells.some((s) => s.row === c.row && s.col === c.col);
-    const water = [0, 1, 2, 3]
-      .flatMap((row) => [0, 1, 2, 3].map((col) => ({ row, col })))
+    const water = [0, 1, 2, 3, 4, 5]
+      .flatMap((row) => [0, 1, 2, 3, 4, 5].map((col) => ({ row, col })))
       .find((c) => !isShip(c));
     if (!water) throw new Error('No water on the computer board');
 
@@ -224,7 +226,7 @@ describe('BattlePage', () => {
     await computerTurn();
     const onMe = root.querySelectorAll('[id^="player-"].miss, [id^="player-"].hit');
     expect(onMe.length).toBe(1);
-    expect(status()).toMatch(/^The computer (missed at|hit your ship at) [A-D][1-4]\. Your turn/);
+    expect(status()).toMatch(/^The computer (missed at|hit your ship at) [A-F][1-6]\. Your turn/);
     expect(timer()).toBe('Your turn: 0:40');
 
     const target = shipCells[0];
@@ -235,7 +237,7 @@ describe('BattlePage', () => {
   });
 
   it('borders a repeat shot red instead of firing again', async () => {
-    const { root, button, enemyCell, click, computerTurn, placeFleet, game } = await setup('4x4');
+    const { root, button, enemyCell, click, computerTurn, placeFleet, game } = await setup('6x6');
     await placeFleet();
     await click(button('Ready'));
     const first = { row: 0, col: 0 };
@@ -249,7 +251,7 @@ describe('BattlePage', () => {
 
   it('declares the winner, reveals the computer fleet and offers a new game', async () => {
     const { root, game, button, enemyCell, status, timer, click, computerTurn, placeFleet } =
-      await setup('4x4');
+      await setup('6x6');
     await placeFleet();
     await click(button('Ready'));
 

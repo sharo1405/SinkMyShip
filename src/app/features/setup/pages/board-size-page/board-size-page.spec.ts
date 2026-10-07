@@ -8,14 +8,14 @@ describe('BoardSizePage', () => {
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
   });
 
-  it('shows 4x4, 6x6 and 8x8 board tiles', async () => {
+  it('shows 6x6 and 8x8 board tiles', async () => {
     const fixture = TestBed.createComponent(BoardSizePage);
     await fixture.whenStable();
     const group = (fixture.nativeElement as HTMLElement).querySelector('[role="group"]');
 
     expect(group?.getAttribute('aria-label')).toBe('Board');
     const labels = [...(group?.querySelectorAll('button') ?? [])].map((b) => b.textContent?.trim());
-    expect(labels).toEqual(['4x4', '6x6', '8x8']);
+    expect(labels).toEqual(['6x6', '8x8']);
   });
 
   it('records the choice and navigates to the colour step', async () => {

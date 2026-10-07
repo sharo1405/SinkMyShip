@@ -37,7 +37,7 @@ describe('MatchController', () => {
   const skipPlacement = () => vi.advanceTimersByTime(PLACEMENT_TIME_LIMIT_MS);
 
   it('starts a game with the computer fleet placed and the placement clock running', () => {
-    match.newGame(6);
+    match.newGame(8);
 
     expect(game.phase()).toBe('placing');
     const computer = game.computerBoard();
@@ -47,7 +47,7 @@ describe('MatchController', () => {
   });
 
   it('starts the battle with the player turn when placement ends', () => {
-    match.newGame(4);
+    match.newGame(6);
     skipPlacement();
 
     expect(game.phase()).toBe('battle');
@@ -56,7 +56,7 @@ describe('MatchController', () => {
   });
 
   it('alternates: the player turn, then the computer three seconds later', () => {
-    match.newGame(4);
+    match.newGame(6);
     skipPlacement();
 
     vi.advanceTimersByTime(TURN_TIME_LIMIT_MS);
@@ -70,7 +70,7 @@ describe('MatchController', () => {
   });
 
   it('stops every clock when the game is over', () => {
-    match.newGame(4);
+    match.newGame(6);
     skipPlacement();
 
     for (const target of game.computerBoard()?.ships.flatMap((s) => s.cells) ?? []) {
@@ -88,9 +88,9 @@ describe('MatchController', () => {
   });
 
   it('restarts cleanly with a new game and stays quiet once stopped', () => {
-    match.newGame(4);
+    match.newGame(6);
     skipPlacement();
-    match.newGame(4);
+    match.newGame(6);
     expect(game.phase()).toBe('placing');
     expect(game.log()).toEqual([]);
 

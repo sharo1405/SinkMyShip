@@ -19,7 +19,7 @@ describe('PlayerPlacement', () => {
     game = TestBed.inject(GameStore);
     placement = TestBed.inject(PlayerPlacement);
     done = vi.fn<() => void>();
-    start(4);
+    start(6);
   });
 
   afterEach(() => {
@@ -27,21 +27,20 @@ describe('PlayerPlacement', () => {
   });
 
   /** A new game on a `size` board, computer fleet placed, player placement open. */
-  function start(size: 4 | 6) {
+  function start(size: 6 | 8) {
     game.newGame(size);
     game.placeFleetRandomly(COMPUTER, seededRng(9));
     placement.start(done);
   }
 
-  /** Places the 4x4 fleet by hand: 2-block on A1-B1, 3-block on A3-C3. */
+  /** Places the 6x6 fleet by hand: 2-block on A1-B1, 3-block on A3-C3, 4-block on A5-D5. */
   const placeWholeFleet = () => {
     placement.selectShip('ship-1');
-    placement.clickCell(at(0, 0));
-    placement.clickCell(at(0, 1));
+    for (const col of [0, 1]) placement.clickCell(at(0, col));
     placement.selectShip('ship-2');
-    placement.clickCell(at(2, 0));
-    placement.clickCell(at(2, 1));
-    placement.clickCell(at(2, 2));
+    for (const col of [0, 1, 2]) placement.clickCell(at(2, col));
+    placement.selectShip('ship-3');
+    for (const col of [0, 1, 2, 3]) placement.clickCell(at(4, col));
   };
 
   describe('placing ships', () => {
@@ -115,7 +114,7 @@ describe('PlayerPlacement', () => {
 
       placement.clickCell(at(2, 1));
       expect(placement.removing()).toBe(false);
-      expect([...game.placedShipIds()]).toEqual(['ship-1']);
+      expect([...game.placedShipIds()]).toEqual(['ship-1', 'ship-3']);
 
       placement.selectShip('ship-2');
       expect(placement.selectedShip()?.id).toBe('ship-2');
@@ -137,7 +136,7 @@ describe('PlayerPlacement', () => {
     });
 
     it('counts down five minutes, then places the missing ships and ends placement', () => {
-      start(6);
+      start(8);
       expect(placement.timeLeftMs()).toBe(PLACEMENT_TIME_LIMIT_MS);
       placement.selectShip('ship-1');
       for (const col of [0, 1, 2]) placement.clickCell(at(0, col));

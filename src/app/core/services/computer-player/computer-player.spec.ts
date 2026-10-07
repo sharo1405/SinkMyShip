@@ -19,7 +19,7 @@ describe('ComputerPlayer', () => {
     game = TestBed.inject(GameStore);
     computer = TestBed.inject(ComputerPlayer);
     done = vi.fn<() => void>();
-    game.newGame(4);
+    game.newGame(6);
   });
 
   afterEach(() => {

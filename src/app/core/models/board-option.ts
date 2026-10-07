@@ -14,7 +14,6 @@ export interface BoardOptionDef {
  * without a fleet fails to compile.
  */
 export const BOARD_OPTIONS = [
-  { id: '4x4', size: 4, label: '4x4' },
   { id: '6x6', size: 6, label: '6x6' },
   { id: '8x8', size: 8, label: '8x8' },
 ] as const satisfies readonly BoardOptionDef[];

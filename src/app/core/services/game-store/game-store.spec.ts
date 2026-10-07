@@ -10,14 +10,15 @@ describe('GameStore', () => {
 
   beforeEach(() => {
     store = TestBed.inject(GameStore);
-    store.newGame(4);
+    store.newGame(6);
   });
 
-  /** Places both 4x4 fleets: 2-block on A1-B1, 3-block on A3-C3, on each board. */
+  /** Places both 6x6 fleets: 2-block on A1-B1, 3-block on A3-C3, 4-block on A5-D5. */
   const placeBothFleets = () => {
     for (const seat of [PLAYER, COMPUTER]) {
       store.placeShip(seat, { id: 'ship-1', length: 2 }, [at(0, 0), at(0, 1)]);
       store.placeShip(seat, { id: 'ship-2', length: 3 }, [at(2, 0), at(2, 1), at(2, 2)]);
+      store.placeShip(seat, { id: 'ship-3', length: 4 }, [at(4, 0), at(4, 1), at(4, 2), at(4, 3)]);
     }
   };
 
@@ -25,7 +26,7 @@ describe('GameStore', () => {
     expect(store.phase()).toBe('placing');
     expect(store.playerBoard()?.ships).toEqual([]);
     expect(store.computerBoard()?.ships).toEqual([]);
-    expect(store.fleet().map((s) => s.length)).toEqual([2, 3]);
+    expect(store.fleet().map((s) => s.length)).toEqual([2, 3, 4]);
   });
 
   it('commits every change as a new state, so signals notify', () => {

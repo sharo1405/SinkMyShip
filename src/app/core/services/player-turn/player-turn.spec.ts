@@ -18,11 +18,12 @@ describe('PlayerTurn', () => {
     turn = TestBed.inject(PlayerTurn);
     done = vi.fn<() => void>();
 
-    // 4x4 battle with both fleets on A1-B1 and A3-C3; the player fires first.
-    game.newGame(4);
+    // 6x6 battle with both fleets on A1-B1, A3-C3 and A5-D5; the player fires first.
+    game.newGame(6);
     for (const seat of [PLAYER, COMPUTER]) {
       game.placeShip(seat, { id: 'ship-1', length: 2 }, [at(0, 0), at(0, 1)]);
       game.placeShip(seat, { id: 'ship-2', length: 3 }, [at(2, 0), at(2, 1), at(2, 2)]);
+      game.placeShip(seat, { id: 'ship-3', length: 4 }, [at(4, 0), at(4, 1), at(4, 2), at(4, 3)]);
     }
     game.startBattle();
   });

@@ -29,16 +29,15 @@ describe('ShipColorPage', () => {
       expect(colorButton(name)?.getAttribute('aria-pressed')).toBe('false');
     }
     expect(ships().map((s) => s.getAttribute('aria-label'))).toEqual([
+      '2-block ship',
       '3-block ship',
       '4-block ship',
-      '5-block ship',
     ]);
     expect(confirm()?.disabled).toBe(true);
   });
 
   it.each([
-    ['4x4', ['2-block ship', '3-block ship']],
-    ['6x6', ['3-block ship', '4-block ship', '5-block ship']],
+    ['6x6', ['2-block ship', '3-block ship', '4-block ship']],
     ['8x8', ['3-block ship', '4-block ship', '5-block ship', '6-block ship']],
   ] as const)('previews the %s fleet', async (board, expected) => {
     const { ships } = await setup(board);
@@ -72,7 +71,7 @@ describe('ShipColorPage', () => {
     for (const ship of ships()) {
       expect(ship.style.getPropertyValue('--ship-color')).toBe('var(--ship-purple)');
     }
-    expect(ships()[0]?.getAttribute('aria-label')).toBe('3-block ship, purple');
+    expect(ships()[0]?.getAttribute('aria-label')).toBe('2-block ship, purple');
   });
 
   it('goes to the battle when the colour is confirmed', async () => {

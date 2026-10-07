@@ -27,7 +27,7 @@ describe('setupCompleteGuard', () => {
     let result = runGuard();
     expect(result instanceof UrlTree && router.serializeUrl(result)).toBe('/setup');
 
-    store.chooseBoard('4x4');
+    store.chooseBoard('6x6');
     result = runGuard();
     expect(result instanceof UrlTree && router.serializeUrl(result)).toBe('/setup');
 
