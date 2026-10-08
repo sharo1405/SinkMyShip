@@ -6,9 +6,9 @@
         <button
           type="button"
           class="power"
-          [class.active]="state === 'active'"
-          [disabled]="state === 'unavailable'"
-          [attr.aria-pressed]="state === 'active'"
+          [class.active]="state === 'active' || state === 'on'"
+          [disabled]="state === 'unavailable' || state === 'on'"
+          [attr.aria-pressed]="state === 'active' || state === 'on'"
           (click)="activate.emit(power.id)"
         >
           {{ power.label }}
@@ -18,6 +18,7 @@
             type="button"
             class="action"
             [attr.aria-label]="action.name"
+            [disabled]="actionDisabled()[power.id] === true"
             (click)="runAction.emit(power.id)"
           >
             {{ action.label }}

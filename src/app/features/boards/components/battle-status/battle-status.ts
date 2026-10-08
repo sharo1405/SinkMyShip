@@ -2,11 +2,13 @@ import { Component, computed, inject } from '@angular/core';
 import { PLAYER } from '@core/models/seats';
 import { GameStore } from '@core/services/game-store/game-store';
 import { PlayerPlacement } from '@core/services/player-placement/player-placement';
+import { PlayerDoubleMissiles } from '@core/services/player-double-missiles/player-double-missiles';
 import { PlayerRadar } from '@core/services/player-radar/player-radar';
-import { PlayerRandomShots } from '@core/services/player-random-shots/player-random-shots';
+import { PlayerShotgun } from '@core/services/player-shotgun/player-shotgun';
 import { PlayerTurn } from '@core/services/player-turn/player-turn';
 import { describeRadar } from '../../utils/radar/describe-radar';
-import { describeVolley, lastVolley } from '../../utils/random-shots/describe-volley';
+import { describeTargeting } from '../../utils/double-missiles/describe-targeting';
+import { describeVolley, lastVolley } from '../../utils/describe-volley';
 import { describeTurn } from '../../utils/describe-turn';
 
 /**
@@ -29,7 +31,8 @@ export class BattleStatus {
   private readonly placement = inject(PlayerPlacement);
   private readonly turn = inject(PlayerTurn);
   private readonly radar = inject(PlayerRadar);
-  private readonly randomShots = inject(PlayerRandomShots);
+  private readonly shotgun = inject(PlayerShotgun);
+  private readonly missiles = inject(PlayerDoubleMissiles);
 
   protected readonly message = computed(() => {
     switch (this.game.phase()) {
@@ -43,8 +46,11 @@ export class BattleStatus {
         if (this.radar.aiming()) {
           return "Pick a cell to scan its row and column on the computer's board. Press Radar again to cancel.";
         }
-        if (this.randomShots.armed()) {
-          return 'Press the red Click button to fire 5 random shots. Press Random shots again to cancel.';
+        if (this.shotgun.armed()) {
+          return 'Press the red Click button to fire the Shotgun. Press Shotgun again to cancel.';
+        }
+        if (this.missiles.armed()) {
+          return describeTargeting(this.missiles.targets().length, this.missiles.targetCount());
         }
         const log = this.game.log();
         const last = log.at(-1);

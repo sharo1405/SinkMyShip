@@ -1,11 +1,19 @@
 :host {
   display: block;
   --cell-size: clamp(1.75rem, 7vw, 3rem);
+  /* Space between cells and around the grid; the cell ring is laid out from it too. */
+  --gap: 3px;
+}
+
+/* The table and the cell ring overlay; the ring is positioned against this box. */
+.frame {
+  position: relative;
+  width: fit-content;
 }
 
 .board {
   border-collapse: separate;
-  border-spacing: 3px;
+  border-spacing: var(--gap);
 }
 
 caption {
@@ -85,6 +93,14 @@ th {
     0 0 0 1.5px rgb(0 0 0 / 0.75);
 }
 
+/* A picked Double Missiles target: a double ring in the focus colour, plus the ⌖ glyph. */
+.cell.targeted {
+  box-shadow:
+    inset 0 0 0 3px var(--color-focus),
+    inset 0 0 0 5px var(--color-bg);
+  color: var(--color-text);
+}
+
 .hit-area {
   display: block;
   width: 100%;
@@ -114,4 +130,50 @@ th {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/*
+ * The shield ring, around the cells only. Anchored to the table's bottom edge (the caption
+ * is on top), past the row-number column when it is on the left, and as large as
+ * N cells + (N - 1) gaps, plus a small margin. It doesn't take part in layout or clicks.
+ */
+.cell-ring {
+  --margin: 2px;
+  --area: calc(var(--board-size) * var(--cell-size) + (var(--board-size) - 1) * var(--gap));
+  position: absolute;
+  bottom: calc(var(--gap) - var(--margin));
+  left: calc(2 * var(--gap) + var(--cell-size) - var(--margin));
+  width: calc(var(--area) + 2 * var(--margin));
+  height: calc(var(--area) + 2 * var(--margin));
+  border-radius: 0.5rem;
+  pointer-events: none;
+}
+
+.cell-ring.end {
+  left: calc(var(--gap) - var(--margin));
+}
+
+.cell-ring.shielded {
+  box-shadow:
+    0 0 0 3px var(--color-accent),
+    0 0 14px 4px var(--color-accent);
+}
+
+.cell-ring.alert {
+  animation: shield-alert 0.4s ease-in-out 2;
+}
+
+@keyframes shield-alert {
+  50% {
+    box-shadow:
+      0 0 0 4px var(--color-hit),
+      0 0 18px 6px var(--color-hit);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell-ring.alert {
+    animation: none;
+    box-shadow: 0 0 0 4px var(--color-hit);
+  }
 }

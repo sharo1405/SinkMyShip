@@ -44,7 +44,7 @@ li {
   gap: 0.4rem;
 }
 
-/* The round red button that carries out an active power, e.g. Random shots' "Click". */
+/* The round red button that carries out an active power, e.g. Shotgun' "Click". */
 .action {
   width: 3rem;
   height: 3rem;
@@ -57,6 +57,14 @@ li {
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* Not ready yet: grey, with a dashed border so it doesn't rely on colour alone. */
+.action:disabled {
+  border-style: dashed;
+  background: var(--color-miss);
+  color: var(--color-text);
+  cursor: not-allowed;
 }
 
 .action:focus-visible {
@@ -88,6 +96,12 @@ button.power.active {
 button.power:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* On (e.g. the Shield is up): pressed look at full strength, nothing to press. */
+button.power.active:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 @container (max-width: 20rem) {

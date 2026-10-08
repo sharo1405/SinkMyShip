@@ -23,6 +23,8 @@ interface BoardCell {
   readonly scanned: boolean;
   /** A ship square a radar scan found: drawn with a white border on top of its mark. */
   readonly radar: boolean;
+  /** Picked as a target (Double Missiles): a target ring and glyph on top of its mark. */
+  readonly targeted: boolean;
   /** Accessible name, e.g. `B3, ship`. */
   readonly name: string;
 }
@@ -66,7 +68,13 @@ const key = ({ row, col }: Coord): string => `${row},${col}`;
  *
  * Radar results are an overlay, separate from the marks: `scannedCells` are lightly tinted
  * and `radarCells` get a white border, while each cell keeps its own mark, so a hidden ship
- * stays water underneath. `aiming` shows a crosshair cursor over the cells.
+ * stays water underneath. `targetCells` (picked Double Missiles targets) get a ring and a
+ * ⌖ glyph, and ", targeted" in their accessible name. `aiming` shows a crosshair cursor.
+ *
+ * `shielded` draws a glowing ring and `alert` a red flash (a static red ring with reduced
+ * motion) around the cells only, not the caption or the row and column labels. The ring is
+ * an overlay laid out from the same CSS sizes as the table (`--cell-size`, `--gap`,
+ * `--board-size`), so it needs no measuring and renders the same on server and client.
  */
 @Component({
   selector: 'app-board',
@@ -74,6 +82,7 @@ const key = ({ row, col }: Coord): string => `${row},${col}`;
   templateUrl: './board.html',
   host: {
     '[style.--ship-color]': 'shipColor()',
+    '[style.--board-size]': 'size()',
   },
 })
 export class Board {
@@ -90,7 +99,12 @@ export class Board {
   readonly rejected = input<Coord | null>(null);
   readonly scannedCells = input<readonly Coord[]>([]);
   readonly radarCells = input<readonly Coord[]>([]);
+  readonly targetCells = input<readonly Coord[]>([]);
   readonly aiming = input(false, { transform: booleanAttribute });
+  /** A shield is up over the cells: draw the shield ring around them. */
+  readonly shielded = input(false, { transform: booleanAttribute });
+  /** A shot just hit the shield: flash the ring red. */
+  readonly alert = input(false, { transform: booleanAttribute });
   readonly shipColor = input<string | null>(null);
   readonly interactive = input(false, { transform: booleanAttribute });
 
@@ -119,6 +133,7 @@ export class Board {
     const rejectedKey = rejected ? key(rejected) : null;
     const scanned = new Set(this.scannedCells().map(key));
     const radar = new Set(this.radarCells().map(key));
+    const targeted = new Set(this.targetCells().map(key));
 
     return Array.from({ length: this.size() }, (_, row) => ({
       number: row + 1,
@@ -129,18 +144,21 @@ export class Board {
         const mark = marks.get(k) ?? 'water';
         const isRejected = k === rejectedKey;
         const isRadar = radar.has(k);
+        const isTargeted = targeted.has(k);
         return {
           at,
           coord,
           id: `${prefix}-${coord}`,
           mark,
-          glyph: MARK_GLYPHS[mark],
+          glyph: isTargeted && mark === 'water' ? '⌖' : MARK_GLYPHS[mark],
           rejected: isRejected,
           scanned: scanned.has(k),
           radar: isRadar,
+          targeted: isTargeted,
           name:
             `${coord}, ${MARK_NAMES[mark]}` +
             (isRadar ? ', radar: ship square' : '') +
+            (isTargeted ? ', targeted' : '') +
             (isRejected ? ', not allowed' : ''),
         };
       }),

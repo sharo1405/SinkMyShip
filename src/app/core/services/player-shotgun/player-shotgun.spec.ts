@@ -4,19 +4,19 @@ import { COMPUTER, PLAYER } from '@core/models/seats';
 import { GameStore } from '@core/services/game-store/game-store';
 import { PlayerRadar } from '@core/services/player-radar/player-radar';
 import { seededRng, type Coord } from '@sinkmyship/game';
-import { PlayerRandomShots } from './player-random-shots';
+import { PlayerShotgun } from './player-shotgun';
 
 const at = (row: number, col: number): Coord => ({ row, col });
 
-describe('PlayerRandomShots', () => {
+describe('PlayerShotgun', () => {
   let game: GameStore;
-  let shots: PlayerRandomShots;
+  let shots: PlayerShotgun;
   let radar: PlayerRadar;
 
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [{ provide: RNG, useValue: seededRng(4) }] });
     game = TestBed.inject(GameStore);
-    shots = TestBed.inject(PlayerRandomShots);
+    shots = TestBed.inject(PlayerShotgun);
     radar = TestBed.inject(PlayerRadar);
 
     // 6x6 battle with both fleets on A1-B1, A3-C3 and A5-D5; the player fires first.
@@ -60,13 +60,13 @@ describe('PlayerRandomShots', () => {
     expect(shots.armed()).toBe(false);
   });
 
-  it('fires 5 random shots when armed and hands the turn to the computer', () => {
+  it('fires the Shotgun when armed and hands the turn to the computer', () => {
     game.startBattle();
     shots.toggle();
     expect(shots.fire()).toBe(true);
 
     expect(game.log()).toHaveLength(5);
-    expect(game.log().every((e) => e.kind === 'shot' && e.power === 'random-shots')).toBe(true);
+    expect(game.log().every((e) => e.kind === 'shot' && e.power === 'shotgun')).toBe(true);
     expect(game.turn()).toBe(COMPUTER);
     expect(shots.armed()).toBe(false);
   });

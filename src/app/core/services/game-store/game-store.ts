@@ -3,19 +3,25 @@ import { COMPUTER, PLAYER } from '@core/models/seats';
 import {
   canFire,
   canStartBattle,
+  canUseDoubleMissiles,
   canUseRadar,
-  canUseRandomShots,
+  canUseShield,
+  canUseShotgun,
   createGame,
   fire,
   fleetFor,
+  isShielded,
+  missileTargetCount,
   opponentView,
   passTurn,
   placeFleetRandomly,
   placeShip,
   removeShip,
   startBattle,
+  useDoubleMissiles,
   useRadar,
-  useRandomShots,
+  useShield,
+  useShotgun,
   type Board,
   type BoardSize,
   type Coord,
@@ -128,15 +134,49 @@ export class GameStore {
     return this.commit((game) => useRadar(game, seat, at));
   }
 
-  /** Whether `seat` may use Random shots now. Reads signals, so use it in `computed`. */
-  canUseRandomShots(seat: Seat): boolean {
+  /** Whether `seat` may use Shotgun now. Reads signals, so use it in `computed`. */
+  canUseShotgun(seat: Seat): boolean {
     const state = this.state();
-    return state !== null && canUseRandomShots(state, seat);
+    return state !== null && canUseShotgun(state, seat);
   }
 
-  /** `seat` fires a volley of random shots as its whole turn; returns the shots fired. */
-  useRandomShots(seat: Seat, rng: Rng): readonly FiredShot[] | null {
-    return this.commit((game) => useRandomShots(game, seat, rng));
+  /** `seat` fires a Shotgun volley as its whole turn; returns the shots fired. */
+  useShotgun(seat: Seat, rng: Rng): readonly FiredShot[] | null {
+    return this.commit((game) => useShotgun(game, seat, rng));
+  }
+
+  /** Whether `seat`'s board has a shield up. Reads signals, so use it in `computed`. */
+  isShielded(seat: Seat): boolean {
+    const state = this.state();
+    return state !== null && isShielded(state, seat);
+  }
+
+  /** Whether `seat` may raise its shield now. Reads signals, so use it in `computed`. */
+  canUseShield(seat: Seat): boolean {
+    const state = this.state();
+    return state !== null && canUseShield(state, seat);
+  }
+
+  /** `seat` raises a shield that blocks the opponent's next shot. Doesn't use the turn. */
+  useShield(seat: Seat): void {
+    this.commit((game) => useShield(game, seat));
+  }
+
+  /** Whether `seat` may use Double Missiles now. Reads signals, so use it in `computed`. */
+  canUseDoubleMissiles(seat: Seat): boolean {
+    const state = this.state();
+    return state !== null && canUseDoubleMissiles(state, seat);
+  }
+
+  /** How many targets `seat` must pick for Double Missiles (2, or fewer near the end). */
+  missileTargetCount(seat: Seat): number {
+    const state = this.state();
+    return state ? missileTargetCount(state, seat) : 0;
+  }
+
+  /** `seat` fires a missile at each target, in order, as its whole turn. */
+  useDoubleMissiles(seat: Seat, targets: readonly Coord[]): readonly FiredShot[] | null {
+    return this.commit((game) => useDoubleMissiles(game, seat, targets));
   }
 
   private viewFor(seat: Seat): OpponentView | null {

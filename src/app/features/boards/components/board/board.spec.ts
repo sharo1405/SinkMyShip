@@ -11,6 +11,8 @@ async function render(inputs: {
   draftCells?: readonly Coord[];
   rejected?: Coord | null;
   interactive?: boolean;
+  shielded?: boolean;
+  alert?: boolean;
 }) {
   const fixture = TestBed.createComponent(Board);
   for (const [name, value] of Object.entries(inputs)) {
@@ -91,5 +93,44 @@ describe('Board', () => {
     root.querySelector<HTMLButtonElement>('button[aria-label="C2, water"]')?.click();
 
     expect(clicked).toEqual([{ row: 1, col: 2 }]);
+  });
+
+  it('draws the shield ring and the alert on an overlay around the cells, not the host', async () => {
+    const { fixture, root } = await render({ size: 6, idPrefix: 'player', label: 'You' });
+    const ring = () => root.querySelector('.frame > .cell-ring');
+    expect(ring()).toBeNull();
+
+    fixture.componentRef.setInput('shielded', true);
+    await fixture.whenStable();
+    expect(ring()?.classList).toContain('shielded');
+    expect(ring()?.classList).not.toContain('end');
+    expect(ring()?.getAttribute('aria-hidden')).toBe('true');
+    // A sibling of the table, so the caption and labels stay outside it.
+    expect(ring()?.previousElementSibling?.tagName).toBe('TABLE');
+    expect(root.classList).not.toContain('shielded');
+    expect(root.style.getPropertyValue('--board-size')).toBe('6');
+
+    fixture.componentRef.setInput('shielded', false);
+    fixture.componentRef.setInput('alert', true);
+    await fixture.whenStable();
+    expect(ring()?.classList).toContain('alert');
+    expect(ring()?.classList).not.toContain('shielded');
+    expect(root.classList).not.toContain('alert');
+
+    fixture.componentRef.setInput('alert', false);
+    await fixture.whenStable();
+    expect(ring()).toBeNull();
+  });
+
+  it('places the ring past the row numbers on either side', async () => {
+    const { root } = await render({
+      size: 8,
+      idPrefix: 'computer',
+      label: 'Computer',
+      rowLabelSide: 'end',
+      shielded: true,
+    });
+    expect(root.querySelector('.cell-ring')?.classList).toContain('end');
+    expect(root.style.getPropertyValue('--board-size')).toBe('8');
   });
 });

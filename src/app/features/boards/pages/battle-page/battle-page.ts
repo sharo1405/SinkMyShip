@@ -2,9 +2,11 @@ import { Component, computed, DestroyRef, inject } from '@angular/core';
 import { SUPERPOWERS, type PowerState } from '@core/models/superpowers';
 import { GameStore } from '@core/services/game-store/game-store';
 import { MatchController } from '@core/services/match-controller/match-controller';
+import { PlayerDoubleMissiles } from '@core/services/player-double-missiles/player-double-missiles';
 import { PlayerPlacement } from '@core/services/player-placement/player-placement';
 import { PlayerRadar } from '@core/services/player-radar/player-radar';
-import { PlayerRandomShots } from '@core/services/player-random-shots/player-random-shots';
+import { PlayerShield } from '@core/services/player-shield/player-shield';
+import { PlayerShotgun } from '@core/services/player-shotgun/player-shotgun';
 import { PlayerTurn } from '@core/services/player-turn/player-turn';
 import { ScoreKeeper } from '@core/services/score-keeper/score-keeper';
 import { SetupStore } from '@core/services/setup-store/setup-store';
@@ -50,13 +52,24 @@ export class BattlePage {
   protected readonly placement = inject(PlayerPlacement);
   protected readonly scores = inject(ScoreKeeper);
   private readonly radar = inject(PlayerRadar);
-  private readonly randomShots = inject(PlayerRandomShots);
+  private readonly shotgun = inject(PlayerShotgun);
+  private readonly missiles = inject(PlayerDoubleMissiles);
+  private readonly shield = inject(PlayerShield);
   private readonly turn = inject(PlayerTurn);
   /** Shown under both boards. */
   protected readonly superpowers = SUPERPOWERS;
-  /** The player's powers that work so far; the others, and all the computer's, are display only. */
+  /** The player's power buttons; the computer's powers are display only. */
   protected readonly playerPowerStates = computed<Partial<Record<SuperpowerId, PowerState>>>(
-    () => ({ radar: this.radar.state(), 'random-shots': this.randomShots.state() }),
+    () => ({
+      radar: this.radar.state(),
+      shotgun: this.shotgun.state(),
+      'double-missiles': this.missiles.state(),
+      shield: this.shield.state(),
+    }),
+  );
+  /** Double Missiles' Click stays grey until its targets are picked. */
+  protected readonly playerActionDisabled = computed<Partial<Record<SuperpowerId, boolean>>>(
+    () => ({ 'double-missiles': !this.missiles.ready() }),
   );
 
   protected readonly size = computed(() => this.setup.boardOptionDef()?.size ?? null);
@@ -70,12 +83,15 @@ export class BattlePage {
   /** A power's block was pressed: switch that power on or off. */
   protected usePower(power: SuperpowerId): void {
     if (power === 'radar') this.radar.toggleAiming();
-    if (power === 'random-shots') this.randomShots.toggle();
+    if (power === 'shotgun') this.shotgun.toggle();
+    if (power === 'double-missiles') this.missiles.toggle();
+    if (power === 'shield') this.shield.activate();
   }
 
   /** An active power's action button was pressed. */
   protected runPowerAction(power: SuperpowerId): void {
-    if (power === 'random-shots') this.turn.fireRandomShots();
+    if (power === 'shotgun') this.turn.fireShotgun();
+    if (power === 'double-missiles') this.turn.fireDoubleMissiles();
   }
 
   protected playAgain(): void {

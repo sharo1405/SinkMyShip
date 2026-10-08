@@ -13,7 +13,7 @@ describe('PowerBar', () => {
     const root = fixture.nativeElement as HTMLElement;
     const list = root.querySelector('ul[aria-label="Your superpowers"]');
     const blocks = [...(list?.querySelectorAll('li') ?? [])].map((b) => b.textContent?.trim());
-    expect(blocks).toEqual(['Radar', 'Random shots', 'Double Missiles', 'Shield']);
+    expect(blocks).toEqual(['Radar', 'Shotgun', 'Double Missiles', 'Shield']);
     expect(root.querySelector('button')).toBeNull();
   });
 
@@ -51,27 +51,60 @@ describe('PowerBar', () => {
     const fixture = TestBed.createComponent(PowerBar);
     fixture.componentRef.setInput('label', 'Your superpowers');
     fixture.componentRef.setInput('powers', SUPERPOWERS);
-    fixture.componentRef.setInput('states', { radar: 'ready', 'random-shots': 'ready' });
+    fixture.componentRef.setInput('states', { radar: 'ready', shotgun: 'ready' });
     const ran: SuperpowerId[] = [];
     fixture.componentInstance.runAction.subscribe((id) => ran.push(id));
     await fixture.whenStable();
 
     const root = fixture.nativeElement as HTMLElement;
     const action = () =>
-      root.querySelector<HTMLButtonElement>('button[aria-label="Click to fire random shots"]');
+      root.querySelector<HTMLButtonElement>('button[aria-label="Click to fire the Shotgun"]');
     expect(action()).toBeNull();
 
-    fixture.componentRef.setInput('states', { radar: 'ready', 'random-shots': 'active' });
+    fixture.componentRef.setInput('states', { radar: 'ready', shotgun: 'active' });
     await fixture.whenStable();
     expect(action()?.textContent?.trim()).toBe('Click');
     // Directly under its own block.
-    expect(action()?.closest('li')?.textContent).toContain('Random shots');
+    expect(action()?.closest('li')?.textContent).toContain('Shotgun');
     action()?.click();
-    expect(ran).toEqual(['random-shots']);
+    expect(ran).toEqual(['shotgun']);
 
     // Radar has no action button, even when active.
-    fixture.componentRef.setInput('states', { radar: 'active', 'random-shots': 'ready' });
+    fixture.componentRef.setInput('states', { radar: 'active', shotgun: 'ready' });
     await fixture.whenStable();
     expect(root.querySelectorAll('button')).toHaveLength(2);
+  });
+
+  it('shows the action button grey and disabled until the power is ready', async () => {
+    const fixture = TestBed.createComponent(PowerBar);
+    fixture.componentRef.setInput('label', 'Your superpowers');
+    fixture.componentRef.setInput('powers', SUPERPOWERS);
+    fixture.componentRef.setInput('states', { 'double-missiles': 'active' });
+    fixture.componentRef.setInput('actionDisabled', { 'double-missiles': true });
+    await fixture.whenStable();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const action = () =>
+      root.querySelector<HTMLButtonElement>('button[aria-label="Click to fire Double Missiles"]');
+    expect(action()?.textContent?.trim()).toBe('Click');
+    expect(action()?.disabled).toBe(true);
+
+    fixture.componentRef.setInput('actionDisabled', { 'double-missiles': false });
+    await fixture.whenStable();
+    expect(action()?.disabled).toBe(false);
+  });
+
+  it("shows an 'on' power pressed and disabled, with no action button", async () => {
+    const fixture = TestBed.createComponent(PowerBar);
+    fixture.componentRef.setInput('label', 'Your superpowers');
+    fixture.componentRef.setInput('powers', SUPERPOWERS);
+    fixture.componentRef.setInput('states', { shield: 'on' });
+    await fixture.whenStable();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const buttons = [...root.querySelectorAll('button')];
+    expect(buttons.map((b) => b.textContent?.trim())).toEqual(['Shield']);
+    expect(buttons[0]?.disabled).toBe(true);
+    expect(buttons[0]?.getAttribute('aria-pressed')).toBe('true');
   });
 });

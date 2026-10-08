@@ -1,61 +1,73 @@
-<table class="board" [class.aiming]="aiming()">
-  <caption>
-    {{
-      label()
-    }}
-  </caption>
-  <thead>
-    <tr>
-      @if (rowLabelSide() === 'start') {
-        <td class="corner"></td>
-      }
-      @for (col of columns(); track col) {
-        <th scope="col">{{ col }}</th>
-      }
-      @if (rowLabelSide() === 'end') {
-        <td class="corner"></td>
-      }
-    </tr>
-  </thead>
-  <tbody>
-    @for (row of rows(); track row.number) {
+<div class="frame">
+  <table class="board" [class.aiming]="aiming()">
+    <caption>
+      {{
+        label()
+      }}
+    </caption>
+    <thead>
       <tr>
         @if (rowLabelSide() === 'start') {
-          <th scope="row">{{ row.number }}</th>
+          <td class="corner"></td>
         }
-        @for (cell of row.cells; track cell.id) {
-          <td
-            class="cell"
-            [id]="cell.id"
-            [attr.data-coord]="cell.coord"
-            [class.ship]="cell.mark === 'ship'"
-            [class.draft]="cell.mark === 'draft'"
-            [class.miss]="cell.mark === 'miss'"
-            [class.hit]="cell.mark === 'hit'"
-            [class.sunk]="cell.mark === 'sunk'"
-            [class.rejected]="cell.rejected"
-            [class.scanned]="cell.scanned"
-            [class.radar]="cell.radar"
-          >
-            @if (interactive()) {
-              <button
-                type="button"
-                class="hit-area"
-                [attr.aria-label]="cell.name"
-                (click)="cellClick.emit(cell.at)"
-              >
-                <span aria-hidden="true">{{ cell.glyph }}</span>
-              </button>
-            } @else if (cell.mark !== 'water' || cell.radar) {
-              <span aria-hidden="true">{{ cell.glyph }}</span>
-              <span class="visually-hidden">{{ cell.name }}</span>
-            }
-          </td>
+        @for (col of columns(); track col) {
+          <th scope="col">{{ col }}</th>
         }
         @if (rowLabelSide() === 'end') {
-          <th scope="row">{{ row.number }}</th>
+          <td class="corner"></td>
         }
       </tr>
-    }
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.number) {
+        <tr>
+          @if (rowLabelSide() === 'start') {
+            <th scope="row">{{ row.number }}</th>
+          }
+          @for (cell of row.cells; track cell.id) {
+            <td
+              class="cell"
+              [id]="cell.id"
+              [attr.data-coord]="cell.coord"
+              [class.ship]="cell.mark === 'ship'"
+              [class.draft]="cell.mark === 'draft'"
+              [class.miss]="cell.mark === 'miss'"
+              [class.hit]="cell.mark === 'hit'"
+              [class.sunk]="cell.mark === 'sunk'"
+              [class.rejected]="cell.rejected"
+              [class.scanned]="cell.scanned"
+              [class.radar]="cell.radar"
+              [class.targeted]="cell.targeted"
+            >
+              @if (interactive()) {
+                <button
+                  type="button"
+                  class="hit-area"
+                  [attr.aria-label]="cell.name"
+                  (click)="cellClick.emit(cell.at)"
+                >
+                  <span aria-hidden="true">{{ cell.glyph }}</span>
+                </button>
+              } @else if (cell.mark !== 'water' || cell.radar || cell.targeted) {
+                <span aria-hidden="true">{{ cell.glyph }}</span>
+                <span class="visually-hidden">{{ cell.name }}</span>
+              }
+            </td>
+          }
+          @if (rowLabelSide() === 'end') {
+            <th scope="row">{{ row.number }}</th>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+  @if (shielded() || alert()) {
+    <span
+      class="cell-ring"
+      aria-hidden="true"
+      [class.end]="rowLabelSide() === 'end'"
+      [class.shielded]="shielded()"
+      [class.alert]="alert()"
+    ></span>
+  }
+</div>

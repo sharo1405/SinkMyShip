@@ -8,8 +8,8 @@ describe('PlayerPowers', () => {
 
     powers.select('radar');
     expect(powers.active()).toBe('radar');
-    powers.select('random-shots');
-    expect(powers.active()).toBe('random-shots');
+    powers.select('shotgun');
+    expect(powers.active()).toBe('shotgun');
 
     powers.clear();
     expect(powers.active()).toBeNull();

@@ -28,6 +28,7 @@
             label="Your superpowers"
             [powers]="superpowers"
             [states]="playerPowerStates()"
+            [actionDisabled]="playerActionDisabled()"
             (activate)="usePower($event)"
             (runAction)="runPowerAction($event)"
           />

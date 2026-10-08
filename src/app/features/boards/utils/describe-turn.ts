@@ -1,5 +1,6 @@
 import { PLAYER } from '@core/models/seats';
 import { coordLabel, type LogEntry } from '@sinkmyship/game';
+import { describeBlocked } from './shield/describe-blocked';
 
 /** One line describing a turn from the game log, from the player's point of view. */
 export function describeTurn(entry: LogEntry): string {
@@ -8,6 +9,7 @@ export function describeTurn(entry: LogEntry): string {
       ? 'Time ran out, your turn was skipped.'
       : 'The computer ran out of time.';
   }
+  if (entry.kind === 'blocked') return describeBlocked(entry);
   const mine = entry.seat === PLAYER;
   const cell = coordLabel(entry.at);
   const outcome = entry.outcome;

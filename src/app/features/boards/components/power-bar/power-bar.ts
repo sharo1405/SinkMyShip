@@ -4,9 +4,11 @@ import type { SuperpowerId } from '@sinkmyship/game';
 
 /**
  * A row of superpower blocks, shown under a board. A power with an entry in `states` is a
- * button (pressed while `active`, disabled while `unavailable`) that emits `activate`; the
+ * button (pressed while `active`, pressed and disabled while `on`, disabled while
+ * `unavailable`) that emits `activate`; the
  * rest are display-only blocks. While a power with an `action` is active, a round red
- * button under its block emits `runAction`. The row wraps to 2x2 when the board is
+ * button under its block emits `runAction`; it is grey and disabled while `actionDisabled`
+ * says the power isn't ready (e.g. targets still to pick). The row wraps to 2x2 when the board is
  * narrow.
  */
 @Component({
@@ -20,6 +22,8 @@ export class PowerBar {
   readonly powers = input.required<readonly SuperpowerDef[]>();
   /** Powers that can be used from this row, and how each button looks now. */
   readonly states = input<Partial<Record<SuperpowerId, PowerState>>>({});
+  /** Powers whose action button is shown but can't be pressed yet. */
+  readonly actionDisabled = input<Partial<Record<SuperpowerId, boolean>>>({});
 
   readonly activate = output<SuperpowerId>();
   readonly runAction = output<SuperpowerId>();
