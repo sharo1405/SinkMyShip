@@ -4,6 +4,7 @@ import { COMPUTER, PLAYER } from '@core/models/seats';
 import { RADAR_REVEAL_MS, TURN_TIME_LIMIT_MS, type Coord } from '@sinkmyship/game';
 import { GameStore } from '@core/services/game-store/game-store';
 import { PlayerRadar } from '@core/services/player-radar/player-radar';
+import { PlayerRandomShots } from '@core/services/player-random-shots/player-random-shots';
 import { PlayerTurn } from './player-turn';
 
 const at = (row: number, col: number): Coord => ({ row, col });
@@ -107,6 +108,33 @@ describe('PlayerTurn', () => {
     vi.advanceTimersByTime(TURN_TIME_LIMIT_MS);
     expect(radar.aiming()).toBe(false);
     expect(radar.scan()).toBeNull();
+  });
+
+  it('fires the armed Random shots as the whole turn: 5 shots, one handoff', () => {
+    const shots = TestBed.inject(PlayerRandomShots);
+    turn.start(done);
+    turn.fireRandomShots();
+    expect(game.log()).toEqual([]);
+
+    shots.toggle();
+    turn.fireRandomShots();
+
+    expect(game.log()).toHaveLength(5);
+    expect(game.turn()).toBe(COMPUTER);
+    expect(turn.active()).toBe(false);
+    expect(turn.timeLeftMs()).toBeNull();
+    expect(done).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels an armed Random shots and skips the turn when the clock runs out', () => {
+    const shots = TestBed.inject(PlayerRandomShots);
+    turn.start(done);
+    shots.toggle();
+    vi.advanceTimersByTime(TURN_TIME_LIMIT_MS);
+
+    expect(shots.armed()).toBe(false);
+    expect(game.log()).toEqual([{ kind: 'timeout', seat: PLAYER }]);
+    expect(done).toHaveBeenCalledTimes(1);
   });
 
   it('ignores shots outside the player turn', () => {

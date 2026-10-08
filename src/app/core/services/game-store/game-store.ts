@@ -4,6 +4,7 @@ import {
   canFire,
   canStartBattle,
   canUseRadar,
+  canUseRandomShots,
   createGame,
   fire,
   fleetFor,
@@ -14,9 +15,11 @@ import {
   removeShip,
   startBattle,
   useRadar,
+  useRandomShots,
   type Board,
   type BoardSize,
   type Coord,
+  type FiredShot,
   type GameState,
   type LogEntry,
   type OpponentView,
@@ -123,6 +126,17 @@ export class GameStore {
    */
   useRadar(seat: Seat, at: Coord): RadarScan | null {
     return this.commit((game) => useRadar(game, seat, at));
+  }
+
+  /** Whether `seat` may use Random shots now. Reads signals, so use it in `computed`. */
+  canUseRandomShots(seat: Seat): boolean {
+    const state = this.state();
+    return state !== null && canUseRandomShots(state, seat);
+  }
+
+  /** `seat` fires a volley of random shots as its whole turn; returns the shots fired. */
+  useRandomShots(seat: Seat, rng: Rng): readonly FiredShot[] | null {
+    return this.commit((game) => useRandomShots(game, seat, rng));
   }
 
   private viewFor(seat: Seat): OpponentView | null {

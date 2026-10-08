@@ -29,6 +29,7 @@
             [powers]="superpowers"
             [states]="playerPowerStates()"
             (activate)="usePower($event)"
+            (runAction)="runPowerAction($event)"
           />
         }
       </section>

@@ -16,15 +16,17 @@ Add `interceptors/` when an HTTP backend exists.
 
 ## Game services
 
-| Service           | Owns                                                                                            |
-| ----------------- | ----------------------------------------------------------------------------------------------- |
-| `GameStore`       | The game state. Wraps every rule call from `@sinkmyship/game`; no timers, no decisions.         |
-| `PlayerPlacement` | The player's placement: selected ship, blocks, Remove, Ready, the five-minute clock.            |
-| `PlayerTurn`      | The player's battle turn: firing at the computer's board and the 10-second turn clock.          |
-| `ComputerPlayer`  | The computer: random fleet, firing three seconds into its turn. Aiming is `chooseShot` (rules). |
-| `MatchController` | Starts a game and decides who acts next. Swap `ComputerPlayer` for a network seat here later.   |
-| `ScoreKeeper`     | Each side's score, replayed from the game log through `scoreLog` (rules). Holds no state.       |
-| `PlayerRadar`     | The player's Radar: aiming, the scan (`useRadar`, rules) and its 2-second overlay timer.        |
+| Service             | Owns                                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| `GameStore`         | The game state. Wraps every rule call from `@sinkmyship/game`; no timers, no decisions.         |
+| `PlayerPlacement`   | The player's placement: selected ship, blocks, Remove, Ready, the five-minute clock.            |
+| `PlayerTurn`        | The player's battle turn: firing at the computer's board and the 10-second turn clock.          |
+| `ComputerPlayer`    | The computer: random fleet, firing three seconds into its turn. Aiming is `chooseShot` (rules). |
+| `MatchController`   | Starts a game and decides who acts next. Swap `ComputerPlayer` for a network seat here later.   |
+| `ScoreKeeper`       | Each side's score, replayed from the game log through `scoreLog` (rules). Holds no state.       |
+| `PlayerRadar`       | The player's Radar: aiming, the scan (`useRadar`, rules) and its `RADAR_REVEAL_MS` overlay.     |
+| `PlayerRandomShots` | The player's Random shots: arming it, and the 5-shot volley (`useRandomShots`, rules) on Click. |
+| `PlayerPowers`      | Which of the player's powers is active, so only one is on at a time.                            |
 
 Placement, turn and computer services take an `onDone` callback from `MatchController` rather than
 injecting it, so the dependencies only point one way.

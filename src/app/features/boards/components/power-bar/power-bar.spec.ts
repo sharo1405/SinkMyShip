@@ -46,4 +46,32 @@ describe('PowerBar', () => {
     await fixture.whenStable();
     expect(buttons()[0]?.disabled).toBe(true);
   });
+
+  it('shows the red action button under an active power that has one', async () => {
+    const fixture = TestBed.createComponent(PowerBar);
+    fixture.componentRef.setInput('label', 'Your superpowers');
+    fixture.componentRef.setInput('powers', SUPERPOWERS);
+    fixture.componentRef.setInput('states', { radar: 'ready', 'random-shots': 'ready' });
+    const ran: SuperpowerId[] = [];
+    fixture.componentInstance.runAction.subscribe((id) => ran.push(id));
+    await fixture.whenStable();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const action = () =>
+      root.querySelector<HTMLButtonElement>('button[aria-label="Click to fire random shots"]');
+    expect(action()).toBeNull();
+
+    fixture.componentRef.setInput('states', { radar: 'ready', 'random-shots': 'active' });
+    await fixture.whenStable();
+    expect(action()?.textContent?.trim()).toBe('Click');
+    // Directly under its own block.
+    expect(action()?.closest('li')?.textContent).toContain('Random shots');
+    action()?.click();
+    expect(ran).toEqual(['random-shots']);
+
+    // Radar has no action button, even when active.
+    fixture.componentRef.setInput('states', { radar: 'active', 'random-shots': 'ready' });
+    await fixture.whenStable();
+    expect(root.querySelectorAll('button')).toHaveLength(2);
+  });
 });

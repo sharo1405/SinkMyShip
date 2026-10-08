@@ -13,6 +13,16 @@
         >
           {{ power.label }}
         </button>
+        @if (state === 'active' && power.action; as action) {
+          <button
+            type="button"
+            class="action"
+            [attr.aria-label]="action.name"
+            (click)="runAction.emit(power.id)"
+          >
+            {{ action.label }}
+          </button>
+        }
       } @else {
         <span class="power">{{ power.label }}</span>
       }

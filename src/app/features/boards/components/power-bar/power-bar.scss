@@ -8,6 +8,7 @@
 .powers {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  align-items: start;
   gap: 0.5rem;
   margin: 0;
   padding: 0;
@@ -31,7 +32,36 @@
   line-height: 1.2;
   box-sizing: border-box;
   width: 100%;
-  height: 100%;
+  /* Fixed, so blocks line up even when one has its action button under it. */
+  height: 3.5rem;
+}
+
+/* Each block, with its action button (if shown) centred under it. */
+li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* The round red button that carries out an active power, e.g. Random shots' "Click". */
+.action {
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 2px solid var(--color-text);
+  border-radius: 50%;
+  background: var(--color-hit);
+  color: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.action:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 button.power {

@@ -4,6 +4,8 @@ import { GameStore } from '@core/services/game-store/game-store';
 import { MatchController } from '@core/services/match-controller/match-controller';
 import { PlayerPlacement } from '@core/services/player-placement/player-placement';
 import { PlayerRadar } from '@core/services/player-radar/player-radar';
+import { PlayerRandomShots } from '@core/services/player-random-shots/player-random-shots';
+import { PlayerTurn } from '@core/services/player-turn/player-turn';
 import { ScoreKeeper } from '@core/services/score-keeper/score-keeper';
 import { SetupStore } from '@core/services/setup-store/setup-store';
 import { Button } from '@shared/ui/button/button';
@@ -47,12 +49,14 @@ export class BattlePage {
   protected readonly game = inject(GameStore);
   protected readonly placement = inject(PlayerPlacement);
   protected readonly scores = inject(ScoreKeeper);
-  protected readonly radar = inject(PlayerRadar);
+  private readonly radar = inject(PlayerRadar);
+  private readonly randomShots = inject(PlayerRandomShots);
+  private readonly turn = inject(PlayerTurn);
   /** Shown under both boards. */
   protected readonly superpowers = SUPERPOWERS;
   /** The player's powers that work so far; the others, and all the computer's, are display only. */
   protected readonly playerPowerStates = computed<Partial<Record<SuperpowerId, PowerState>>>(
-    () => ({ radar: this.radar.state() }),
+    () => ({ radar: this.radar.state(), 'random-shots': this.randomShots.state() }),
   );
 
   protected readonly size = computed(() => this.setup.boardOptionDef()?.size ?? null);
@@ -63,8 +67,15 @@ export class BattlePage {
     inject(DestroyRef).onDestroy(() => this.match.stop());
   }
 
+  /** A power's block was pressed: switch that power on or off. */
   protected usePower(power: SuperpowerId): void {
     if (power === 'radar') this.radar.toggleAiming();
+    if (power === 'random-shots') this.randomShots.toggle();
+  }
+
+  /** An active power's action button was pressed. */
+  protected runPowerAction(power: SuperpowerId): void {
+    if (power === 'random-shots') this.turn.fireRandomShots();
   }
 
   protected playAgain(): void {

@@ -5,7 +5,8 @@ import type { SuperpowerId } from '@sinkmyship/game';
 /**
  * A row of superpower blocks, shown under a board. A power with an entry in `states` is a
  * button (pressed while `active`, disabled while `unavailable`) that emits `activate`; the
- * rest are display-only blocks. The row wraps to 2x2 when the board is
+ * rest are display-only blocks. While a power with an `action` is active, a round red
+ * button under its block emits `runAction`. The row wraps to 2x2 when the board is
  * narrow.
  */
 @Component({
@@ -21,4 +22,5 @@ export class PowerBar {
   readonly states = input<Partial<Record<SuperpowerId, PowerState>>>({});
 
   readonly activate = output<SuperpowerId>();
+  readonly runAction = output<SuperpowerId>();
 }

@@ -3,8 +3,10 @@ import { PLAYER } from '@core/models/seats';
 import { GameStore } from '@core/services/game-store/game-store';
 import { PlayerPlacement } from '@core/services/player-placement/player-placement';
 import { PlayerRadar } from '@core/services/player-radar/player-radar';
+import { PlayerRandomShots } from '@core/services/player-random-shots/player-random-shots';
 import { PlayerTurn } from '@core/services/player-turn/player-turn';
-import { describeRadar } from '../../utils/describe-radar';
+import { describeRadar } from '../../utils/radar/describe-radar';
+import { describeVolley, lastVolley } from '../../utils/random-shots/describe-volley';
 import { describeTurn } from '../../utils/describe-turn';
 
 /**
@@ -27,6 +29,7 @@ export class BattleStatus {
   private readonly placement = inject(PlayerPlacement);
   private readonly turn = inject(PlayerTurn);
   private readonly radar = inject(PlayerRadar);
+  private readonly randomShots = inject(PlayerRandomShots);
 
   protected readonly message = computed(() => {
     switch (this.game.phase()) {
@@ -40,21 +43,32 @@ export class BattleStatus {
         if (this.radar.aiming()) {
           return "Pick a cell to scan its row and column on the computer's board. Press Radar again to cancel.";
         }
-        const last = this.game.log().at(-1);
-        const lead = last
-          ? describeTurn(last)
-          : this.placement.autoPlaced()
-            ? 'Time is up. Your remaining ships were placed for you.'
-            : '';
+        if (this.randomShots.armed()) {
+          return 'Press the red Click button to fire 5 random shots. Press Random shots again to cancel.';
+        }
+        const log = this.game.log();
+        const last = log.at(-1);
+        const volley = lastVolley(log);
+        const lead = volley
+          ? describeVolley(volley)
+          : last
+            ? describeTurn(last)
+            : this.placement.autoPlaced()
+              ? 'Time is up. Your remaining ships were placed for you.'
+              : '';
         const next = this.turn.active()
           ? "Your turn: fire at the computer's board."
           : 'The computer is aiming…';
         return `${lead} ${next}`.trim();
       }
-      case 'over':
-        return this.game.winner() === PLAYER
-          ? 'You win! You sank the whole computer fleet.'
-          : 'You lose. The computer sank your fleet.';
+      case 'over': {
+        const volley = lastVolley(this.game.log());
+        const result =
+          this.game.winner() === PLAYER
+            ? 'You win! You sank the whole computer fleet.'
+            : 'You lose. The computer sank your fleet.';
+        return volley ? `${describeVolley(volley)} ${result}` : result;
+      }
       default:
         return '';
     }

@@ -376,6 +376,52 @@ describe('BattlePage', () => {
     expect(root.querySelector(`#computer-${label}`)?.classList).toContain('hit');
   });
 
+  it('arms Random shots with a red Click button that fires 5 shots as the whole turn', async () => {
+    const { root, game, button, status, timer, click, placeFleet } = await setup('6x6');
+    await placeFleet();
+    await click(button('Ready'));
+    const power = (name: string) =>
+      [
+        ...root.querySelectorAll<HTMLButtonElement>('ul[aria-label="Your superpowers"] button'),
+      ].find((b) => b.textContent?.trim() === name);
+    const fireButton = () =>
+      root.querySelector<HTMLButtonElement>('button[aria-label="Click to fire random shots"]');
+    const computerMarks = () =>
+      root.querySelectorAll('[id^="computer-"].miss, [id^="computer-"].hit, [id^="computer-"].sunk')
+        .length;
+
+    // Pressing the block shows the red Click button; pressing it again hides it, firing nothing.
+    expect(fireButton()).toBeNull();
+    await click(power('Random shots'));
+    expect(power('Random shots')?.getAttribute('aria-pressed')).toBe('true');
+    expect(fireButton()?.textContent?.trim()).toBe('Click');
+    expect(status()).toMatch(/^Press the red Click button/);
+    await click(power('Random shots'));
+    expect(fireButton()).toBeNull();
+    expect(game.log()).toEqual([]);
+
+    // Only one power at a time.
+    await click(power('Radar'));
+    await click(power('Random shots'));
+    expect(power('Radar')?.getAttribute('aria-pressed')).toBe('false');
+    expect(power('Random shots')?.getAttribute('aria-pressed')).toBe('true');
+    await click(power('Radar'));
+    expect(power('Random shots')?.getAttribute('aria-pressed')).toBe('false');
+    expect(fireButton()).toBeNull();
+    await click(power('Radar'));
+
+    await click(power('Random shots'));
+    await click(fireButton());
+
+    expect(game.log()).toHaveLength(5);
+    expect(computerMarks()).toBe(5);
+    expect(fireButton()).toBeNull();
+    expect(timer()).toBe("Computer's turn");
+    expect(status()).toMatch(
+      /^Random shots: \d hits?, \d (miss|misses)\.( You sank a \d-block ship!)* The computer is aiming…$/,
+    );
+  });
+
   it('borders a repeat shot red instead of firing again', async () => {
     const { root, button, enemyCell, click, computerTurn, placeFleet, game } = await setup('6x6');
     await placeFleet();
