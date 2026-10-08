@@ -69,8 +69,42 @@ async function setup(board: BoardOptionId) {
     for (const c of ['A5', 'B5', 'C5', 'D5']) await click(cell(c));
   };
   const game = TestBed.inject(GameStore);
+  /** Cells of the computer's board not fired at yet, in reading order. */
+  const openCells = (): Coord[] =>
+    (game.enemyView()?.cells ?? []).flatMap((cells, row) =>
+      cells.flatMap((c, col) => (c === 'unknown' ? [{ row, col }] : [])),
+    );
+  /**
+   * Earns the player score points: hits a computer ship square (taken from the bottom-right)
+   * each turn, letting the computer take its turns in between. Three rounds earn 6 points.
+   */
+  const earnPoints = async (rounds = 3) => {
+    const board = game.computerBoard();
+    const ships = (board?.ships.flatMap((s) => s.cells) ?? [])
+      .filter((c) => !board?.shots.some((s) => sameCoord(s, c)))
+      .sort((a, b) => b.row - a.row || b.col - a.col);
+    for (const at of ships.slice(0, rounds)) {
+      await click(enemyCell(at));
+      await computerTurn();
+    }
+  };
+  /** The player's power button whose name is `name`. */
+  const power = (name: string) =>
+    [...root.querySelectorAll<HTMLButtonElement>('ul[aria-label="Your superpowers"] button')].find(
+      (b) => b.querySelector('.name')?.textContent?.trim() === name,
+    );
+  /** The player's score card, e.g. "Your score 4 pts -2 Radar". */
+  const playerScore = () =>
+    [...(root.querySelector('[role="group"][aria-label="Your score"]')?.children ?? [])]
+      .map((part) => part.textContent?.replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+      .join(' ');
   return {
     fixture,
+    openCells,
+    earnPoints,
+    power,
+    playerScore,
     root,
     game,
     trayShip,
@@ -186,7 +220,7 @@ describe('BattlePage', () => {
     vi.advanceTimersByTime(PLACEMENT_TIME_LIMIT_MS - 90_000);
     await fixture.whenStable();
 
-    expect(timer()).toBe('Your turn: 0:10');
+    expect(timer()).toBe('Your turn: 0:25');
     expect(status()).toBe(
       "Time is up. Your remaining ships were placed for you. Your turn: fire at the computer's board.",
     );
@@ -205,7 +239,7 @@ describe('BattlePage', () => {
     expect(status()).toBe('All ships placed. Press Ready to start the battle.');
     await click(button('Ready'));
 
-    expect(timer()).toBe('Your turn: 0:10');
+    expect(timer()).toBe('Your turn: 0:25');
     expect(root.querySelector('[aria-label="Your ships"]')).toBeNull();
     expect(root.querySelectorAll('[id^="computer-"].ship').length).toBe(0);
     expect(root.querySelectorAll('[id^="computer-"] button').length).toBe(36);
@@ -236,7 +270,7 @@ describe('BattlePage', () => {
     const onMe = root.querySelectorAll('[id^="player-"].miss, [id^="player-"].hit');
     expect(onMe.length).toBe(1);
     expect(status()).toMatch(/^The computer (missed at|hit your ship at) [A-F][1-6]\. Your turn/);
-    expect(timer()).toBe('Your turn: 0:10');
+    expect(timer()).toBe('Your turn: 0:25');
 
     const target = shipCells[0];
     if (!target) throw new Error('No computer ship');
@@ -281,8 +315,8 @@ describe('BattlePage', () => {
   it('shows the four superpowers under each board once the battle starts', async () => {
     const { root, button, click, placeFleet } = await setup('6x6');
     const powers = (name: string) => root.querySelector(`ul[aria-label="${name}"]`);
-    const labels = (name: string) =>
-      [...(powers(name)?.querySelectorAll('li') ?? [])].map((b) => b.textContent?.trim());
+    const labels = (name: string, part = 'name') =>
+      [...(powers(name)?.querySelectorAll(`li .${part}`) ?? [])].map((b) => b.textContent?.trim());
     expect(powers('Your superpowers')).toBeNull();
     expect(powers("Computer's superpowers")).toBeNull();
 
@@ -291,6 +325,15 @@ describe('BattlePage', () => {
     const expected = ['Radar', 'Shotgun', 'Double Missiles', 'Shield'];
     expect(labels('Your superpowers')).toEqual(expected);
     expect(labels("Computer's superpowers")).toEqual(expected);
+    const prices = ['2 pts', '5 pts', '4 pts', '6 pts'];
+    expect(labels('Your superpowers', 'price')).toEqual(prices);
+    expect(labels("Computer's superpowers", 'price')).toEqual(prices);
+    // Everyone starts at 0 points, so every power is out of reach.
+    const playerButtons = [
+      ...root.querySelectorAll<HTMLButtonElement>('ul[aria-label="Your superpowers"] button'),
+    ];
+    expect(playerButtons.map((b) => b.disabled)).toEqual([true, true, true, true]);
+    expect(playerButtons[0]?.getAttribute('aria-label')).toBe('Radar, costs 2 points, you have 0');
 
     for (const [name, board] of [
       ['Your superpowers', '#player-A1'],
@@ -304,13 +347,34 @@ describe('BattlePage', () => {
     }
   });
 
-  it('scans with the Radar instead of firing, borders the ship squares for RADAR_REVEAL_MS, and scans again', async () => {
-    const { fixture, root, game, button, enemyCell, status, click, placeFleet } =
-      await setup('6x6');
+  it('enables a power only once the player has its price: Radar at 2 points', async () => {
+    const { button, click, placeFleet, earnPoints, power, playerScore } = await setup('6x6');
     await placeFleet();
     await click(button('Ready'));
+    expect(power('Radar')?.disabled).toBe(true);
 
-    // From here the 2-second reveal runs on fake timers, so render synchronously.
+    await earnPoints(1);
+    expect(power('Radar')?.disabled).toBe(true);
+    await earnPoints(1);
+    expect(playerScore()).toMatch(/^Your score 2 pts/);
+    expect(power('Radar')?.disabled).toBe(false);
+    expect(power('Radar')?.getAttribute('aria-label')).toBe('Radar, costs 2 points');
+    expect(power('Shotgun')?.disabled).toBe(true);
+    expect(power('Shotgun')?.classList).toContain('unaffordable');
+    expect(power('Shotgun')?.getAttribute('aria-label')).toBe(
+      'Shotgun, costs 5 points, you have 2',
+    );
+  });
+
+  it('scans with the Radar for 2 points instead of firing, shows the ship squares briefly, and scans again', async () => {
+    const s = await setup('6x6');
+    const { fixture, root, game, enemyCell, status, click } = s;
+    await s.placeFleet();
+    await click(s.button('Ready'));
+    await s.earnPoints();
+    expect(s.playerScore()).toMatch(/^Your score 6 pts/);
+
+    // From here the reveal runs on fake timers, so render synchronously.
     vi.useFakeTimers({
       toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'Date'],
     });
@@ -318,33 +382,39 @@ describe('BattlePage', () => {
       el?.click();
       fixture.detectChanges();
     };
-    const radarButton = () =>
-      root.querySelector<HTMLButtonElement>('ul[aria-label="Your superpowers"] button');
+    const radarButton = () => s.power('Radar');
     const overlay = (cls: string) =>
       [...root.querySelectorAll(`[id^="computer-"].${cls}`)].map((e) => e.id).sort();
-
-    expect(radarButton()?.textContent?.trim()).toBe('Radar');
     expect(root.querySelector('ul[aria-label="Computer\'s superpowers"] button')).toBeNull();
 
-    // Pressing Radar again is the way to cancel aiming.
+    // Pressing Radar again is the way to cancel aiming, and it costs nothing.
     press(radarButton());
     expect(radarButton()?.getAttribute('aria-pressed')).toBe('true');
     expect(status()).toMatch(/^Pick a cell to scan/);
     press(radarButton());
     expect(radarButton()?.getAttribute('aria-pressed')).toBe('false');
     expect(status()).not.toMatch(/Pick a cell/);
+    expect(s.playerScore()).toMatch(/^Your score 6 pts/);
+    const logLength = game.log().length;
 
-    const ships = game.computerBoard()?.ships.flatMap((s) => s.cells) ?? [];
-    const target = ships[0];
-    if (!target) throw new Error('No computer ship');
+    const ships = game.computerBoard()?.ships.flatMap((c) => c.cells) ?? [];
+    const open = s.openCells();
+    const target = ships.find((c) => open.some((o) => sameCoord(o, c)));
+    if (!target) throw new Error('No unshot computer ship square');
     press(radarButton());
     press(enemyCell(target));
 
-    const found = radarCross(6, target).filter((c) => ships.some((s) => sameCoord(s, c)));
+    const found = radarCross(6, target).filter((c) => ships.some((sq) => sameCoord(sq, c)));
     expect(overlay('radar')).toEqual(found.map((c) => `computer-${coordLabel(c)}`).sort());
     expect(overlay('scanned')).toHaveLength(11);
     expect(overlay('ship')).toEqual([]);
-    expect(game.log()).toEqual([]);
+    expect(
+      game
+        .log()
+        .slice(logLength)
+        .map((e) => e.kind),
+    ).toEqual(['power']);
+    expect(s.playerScore()).toBe('Your score 4 pts -2 Radar');
     expect(enemyCell(target)?.getAttribute('aria-label')).toBe(
       `${coordLabel(target)}, water, radar: ship square`,
     );
@@ -356,7 +426,12 @@ describe('BattlePage', () => {
 
     // No firing, and no second scan, while the borders show.
     press(enemyCell(target));
-    expect(game.log()).toEqual([]);
+    expect(
+      game
+        .log()
+        .slice(logLength)
+        .map((e) => e.kind),
+    ).toEqual(['power']);
     expect(radarButton()?.disabled).toBe(true);
 
     vi.advanceTimersByTime(RADAR_REVEAL_MS);
@@ -365,33 +440,38 @@ describe('BattlePage', () => {
     expect(overlay('scanned')).toEqual([]);
     expect(radarButton()?.disabled).toBe(false);
 
-    // Again in the same turn, then the turn's shot.
+    // Again in the same turn, for 2 more points, then the turn's shot.
     press(radarButton());
     press(enemyCell({ row: 5, col: 5 }));
     expect(overlay('scanned')).toHaveLength(11);
+    expect(s.playerScore()).toBe('Your score 2 pts -2 Radar');
     vi.advanceTimersByTime(RADAR_REVEAL_MS);
     fixture.detectChanges();
 
     press(enemyCell(target));
-    expect(game.log()).toHaveLength(1);
+    expect(
+      game
+        .log()
+        .slice(logLength)
+        .map((e) => e.kind),
+    ).toEqual(['power', 'power', 'shot']);
     expect(root.querySelector(`#computer-${label}`)?.classList).toContain('hit');
   });
 
-  it('arms Shotgun with a red Click button that fires 5 shots as the whole turn', async () => {
-    const { root, game, button, status, timer, click, placeFleet } = await setup('6x6');
-    await placeFleet();
-    await click(button('Ready'));
-    const power = (name: string) =>
-      [
-        ...root.querySelectorAll<HTMLButtonElement>('ul[aria-label="Your superpowers"] button'),
-      ].find((b) => b.textContent?.trim() === name);
+  it('arms Shotgun with a red Click button that fires 5 shots as the whole turn, then pays', async () => {
+    const s = await setup('6x6');
+    const { root, game, status, timer, click, power } = s;
+    await s.placeFleet();
+    await click(s.button('Ready'));
+    await s.earnPoints();
     const fireButton = () =>
       root.querySelector<HTMLButtonElement>('button[aria-label="Click to fire the Shotgun"]');
     const computerMarks = () =>
       root.querySelectorAll('[id^="computer-"].miss, [id^="computer-"].hit, [id^="computer-"].sunk')
         .length;
+    const logLength = game.log().length;
 
-    // Pressing the block shows the red Click button; pressing it again hides it, firing nothing.
+    // Pressing the block shows the red Click button; pressing it again hides it, free.
     expect(fireButton()).toBeNull();
     await click(power('Shotgun'));
     expect(power('Shotgun')?.getAttribute('aria-pressed')).toBe('true');
@@ -399,7 +479,8 @@ describe('BattlePage', () => {
     expect(status()).toMatch(/^Press the red Click button/);
     await click(power('Shotgun'));
     expect(fireButton()).toBeNull();
-    expect(game.log()).toEqual([]);
+    expect(game.log()).toHaveLength(logLength);
+    expect(s.playerScore()).toMatch(/^Your score 6 pts/);
 
     // Only one power at a time.
     await click(power('Radar'));
@@ -411,30 +492,39 @@ describe('BattlePage', () => {
     expect(fireButton()).toBeNull();
     await click(power('Radar'));
 
+    const marksBefore = computerMarks();
     await click(power('Shotgun'));
     await click(fireButton());
 
-    expect(game.log()).toHaveLength(5);
-    expect(computerMarks()).toBe(5);
+    expect(
+      game
+        .log()
+        .slice(logLength)
+        .map((e) => e.kind),
+    ).toEqual(['shot', 'shot', 'shot', 'shot', 'shot', 'power']);
+    expect(computerMarks()).toBe(marksBefore + 5);
     expect(fireButton()).toBeNull();
     expect(timer()).toBe("Computer's turn");
+    expect(s.playerScore()).toMatch(/ -\d Shotgun$/);
     expect(status()).toMatch(
       /^Shotgun: \d hits?, \d (miss|misses)\.( You sank a \d-block ship!)* The computer is aiming…$/,
     );
   });
 
   it('arms Double Missiles, picks 2 targets on the board, then fires both as the turn', async () => {
-    const { root, game, button, enemyCell, status, timer, click, placeFleet } = await setup('6x6');
-    await placeFleet();
-    await click(button('Ready'));
-    const power = (name: string) =>
-      [
-        ...root.querySelectorAll<HTMLButtonElement>('ul[aria-label="Your superpowers"] button'),
-      ].find((b) => b.textContent?.trim() === name);
+    const s = await setup('6x6');
+    const { root, game, enemyCell, status, timer, click, power } = s;
+    await s.placeFleet();
+    await click(s.button('Ready'));
+    await s.earnPoints();
     const fireButton = () =>
       root.querySelector<HTMLButtonElement>('button[aria-label="Click to fire Double Missiles"]');
     const targeted = () =>
       [...root.querySelectorAll('[id^="computer-"].targeted')].map((c) => c.id).sort();
+    const id = (c: Coord) => `computer-${coordLabel(c)}`;
+    const [a, b, c] = s.openCells();
+    if (!a || !b || !c) throw new Error('Not enough open cells');
+    const logLength = game.log().length;
 
     // Arming shows a grey, disabled Click.
     await click(power('Double Missiles'));
@@ -443,26 +533,27 @@ describe('BattlePage', () => {
     expect(status()).toMatch(/^Pick 2 cells .*\(0\/2\)/);
 
     // Board clicks pick and unpick targets without firing; a third pick is ignored.
-    await click(enemyCell({ row: 0, col: 0 }));
-    expect(targeted()).toEqual(['computer-A1']);
-    expect(enemyCell({ row: 0, col: 0 })?.getAttribute('aria-label')).toBe('A1, water, targeted');
+    await click(enemyCell(a));
+    expect(targeted()).toEqual([id(a)]);
+    expect(enemyCell(a)?.getAttribute('aria-label')).toBe(`${coordLabel(a)}, water, targeted`);
     expect(status()).toMatch(/\(1\/2\)/);
-    await click(enemyCell({ row: 0, col: 0 }));
+    await click(enemyCell(a));
     expect(targeted()).toEqual([]);
-    await click(enemyCell({ row: 5, col: 5 }));
-    await click(enemyCell({ row: 5, col: 4 }));
-    await click(enemyCell({ row: 5, col: 3 }));
-    expect(targeted()).toEqual(['computer-E6', 'computer-F6']);
-    expect(game.log()).toEqual([]);
+    await click(enemyCell(b));
+    await click(enemyCell(a));
+    await click(enemyCell(c));
+    expect(targeted()).toEqual([id(a), id(b)].sort());
+    expect(game.log()).toHaveLength(logLength);
 
     // Two picks enable Click.
     expect(fireButton()?.disabled).toBe(false);
     expect(status()).toMatch(/^Press Click to fire both missiles\./);
 
-    // Pressing the block again cancels and clears the picks; other powers take over.
+    // Pressing the block again cancels and clears the picks, free; other powers take over.
     await click(power('Double Missiles'));
     expect(fireButton()).toBeNull();
     expect(targeted()).toEqual([]);
+    expect(s.playerScore()).toMatch(/^Your score 6 pts/);
     await click(power('Double Missiles'));
     await click(power('Shotgun'));
     expect(power('Double Missiles')?.getAttribute('aria-pressed')).toBe('false');
@@ -472,28 +563,31 @@ describe('BattlePage', () => {
     expect(power('Radar')?.getAttribute('aria-pressed')).toBe('false');
     expect(fireButton()?.disabled).toBe(true);
 
-    await click(enemyCell({ row: 5, col: 5 }));
-    await click(enemyCell({ row: 5, col: 4 }));
+    await click(enemyCell(b));
+    await click(enemyCell(a));
     await click(fireButton());
 
-    expect(game.log()).toHaveLength(2);
-    expect(game.log().map((e) => (e.kind === 'shot' ? coordLabel(e.at) : e.kind))).toEqual([
-      'F6',
-      'E6',
-    ]);
+    expect(
+      game
+        .log()
+        .slice(logLength)
+        .map((e) => (e.kind === 'shot' ? coordLabel(e.at) : e.kind)),
+    ).toEqual([coordLabel(b), coordLabel(a), 'power']);
     expect(fireButton()).toBeNull();
     expect(targeted()).toEqual([]);
     expect(timer()).toBe("Computer's turn");
+    expect(s.playerScore()).toMatch(/ -\d Double Missiles$/);
     expect(status()).toMatch(
       /^Double Missiles: \d hits?, \d (miss|misses)\.( You sank a \d-block ship!)* The computer is aiming…$/,
     );
   });
 
-  it("raises the Shield with one press, blocks the computer's next shot with a red flash, then drops", async () => {
-    const { fixture, root, game, button, enemyCell, status, click, placeFleet } =
-      await setup('6x6');
-    await placeFleet();
-    await click(button('Ready'));
+  it("raises the Shield for 6 points, blocks the computer's next shot with a red flash, then drops", async () => {
+    const s = await setup('6x6');
+    const { fixture, root, game, enemyCell, status, click } = s;
+    await s.placeFleet();
+    await click(s.button('Ready'));
+    await s.earnPoints();
 
     // From here the computer's move and the flash run on fake timers; render synchronously.
     vi.useFakeTimers({
@@ -503,15 +597,15 @@ describe('BattlePage', () => {
       el?.click();
       fixture.detectChanges();
     };
-    const shieldButton = () =>
-      [
-        ...root.querySelectorAll<HTMLButtonElement>('ul[aria-label="Your superpowers"] button'),
-      ].find((b) => b.textContent?.trim() === 'Shield');
+    const shieldButton = () => s.power('Shield');
     const caption = () =>
       root.querySelector('#player-A1')?.closest('table')?.querySelector('caption');
     const playerBoard = () => root.querySelector('app-player-board');
     /** The ring overlay around the player's cells (not the caption or labels). */
     const ring = () => playerBoard()?.querySelector('.frame > .cell-ring') ?? null;
+    const playerMarks = () =>
+      root.querySelectorAll('[id^="player-"].miss, [id^="player-"].hit, [id^="player-"].sunk')
+        .length;
 
     press(shieldButton());
     expect(caption()?.textContent?.trim()).toBe('Your board: Shield up');
@@ -520,15 +614,17 @@ describe('BattlePage', () => {
     expect(shieldButton()?.disabled).toBe(true);
     expect(shieldButton()?.getAttribute('aria-pressed')).toBe('true');
     expect(root.querySelector('ul[aria-label="Your superpowers"] .action')).toBeNull();
+    expect(s.playerScore()).toBe('Your score 0 pts -6 Shield');
     expect(game.isTurnOf(0)).toBe(true);
 
     // The player still fires; then the computer's shot hits the shield.
-    press(enemyCell({ row: 5, col: 5 }));
+    const marksBefore = playerMarks();
+    press(enemyCell(s.openCells()[0]));
     vi.advanceTimersByTime(0);
     fixture.detectChanges();
 
     expect(game.log().at(-1)?.kind).toBe('blocked');
-    expect(root.querySelectorAll('[id^="player-"].miss, [id^="player-"].hit').length).toBe(0);
+    expect(playerMarks()).toBe(marksBefore);
     expect(status()).toBe(
       "Your shield blocked the computer's shot! Your turn: fire at the computer's board.",
     );
@@ -536,7 +632,6 @@ describe('BattlePage', () => {
     expect(ring()?.classList).not.toContain('shielded');
     expect(playerBoard()?.classList).not.toContain('alert');
     expect(caption()?.textContent?.trim()).toBe('Your board');
-    expect(shieldButton()?.disabled).toBe(false);
 
     vi.advanceTimersByTime(SHIELD_ALERT_MS);
     fixture.detectChanges();

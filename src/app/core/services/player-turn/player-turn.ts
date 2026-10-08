@@ -13,7 +13,7 @@ import { TurnHandoff } from '@core/utils/turn-handoff/turn-handoff';
 import { TURN_TIME_LIMIT_MS, type Coord } from '@sinkmyship/game';
 
 /**
- * The player's side of the battle: firing at the computer's board and the 10-second turn
+ * The player's side of the battle: firing at the computer's board and the 25-second turn
  * clock. When the clock runs out the turn is skipped. While the Radar is being aimed, a click
  * on the computer's board scans instead of firing, and firing waits until the scan's result
  * has been shown; the radar never ends the turn. While Double Missiles is armed, a click picks

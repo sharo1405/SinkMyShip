@@ -7,11 +7,14 @@
           type="button"
           class="power"
           [class.active]="state === 'active' || state === 'on'"
+          [class.unaffordable]="unaffordable()[power.id] === true"
+          [attr.aria-label]="names()[power.id]"
           [disabled]="state === 'unavailable' || state === 'on'"
           [attr.aria-pressed]="state === 'active' || state === 'on'"
           (click)="activate.emit(power.id)"
         >
-          {{ power.label }}
+          <span class="name">{{ power.label }}</span>
+          <span class="price">{{ power.price }} pts</span>
         </button>
         @if (state === 'active' && power.action; as action) {
           <button
@@ -25,7 +28,10 @@
           </button>
         }
       } @else {
-        <span class="power">{{ power.label }}</span>
+        <span class="power">
+          <span class="name">{{ power.label }}</span>
+          <span class="price">{{ power.price }} pts</span>
+        </span>
       }
     </li>
   }

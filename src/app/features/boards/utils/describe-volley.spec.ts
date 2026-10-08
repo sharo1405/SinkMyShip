@@ -31,6 +31,16 @@ describe('lastVolley', () => {
       shots: missiles,
     });
   });
+
+  it('looks past the payment logged after the shots', () => {
+    const shots = [shot(0, HIT, 'shotgun'), shot(0, MISS, 'shotgun')];
+    const paid: LogEntry = { kind: 'power', seat: 0, power: 'shotgun', cost: 5 };
+    expect(lastVolley([shot(1, MISS), ...shots, paid])).toEqual({ power: 'shotgun', shots });
+    // A payment with no shots before it (Radar, Shield) is not a volley.
+    expect(
+      lastVolley([shot(0, HIT), { kind: 'power', seat: 0, power: 'radar', cost: 2 }]),
+    ).toBeNull();
+  });
 });
 
 describe('describeVolley', () => {

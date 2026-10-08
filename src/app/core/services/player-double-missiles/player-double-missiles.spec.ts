@@ -3,7 +3,8 @@ import { COMPUTER, PLAYER } from '@core/models/seats';
 import { GameStore } from '@core/services/game-store/game-store';
 import { PlayerRadar } from '@core/services/player-radar/player-radar';
 import { PlayerShotgun } from '@core/services/player-shotgun/player-shotgun';
-import type { Coord } from '@sinkmyship/game';
+import { earnPoints } from '@core/testing/earn-points';
+import { DOUBLE_MISSILES_PRICE, type Coord } from '@sinkmyship/game';
 import { PlayerDoubleMissiles } from './player-double-missiles';
 
 const at = (row: number, col: number): Coord => ({ row, col });
@@ -25,18 +26,22 @@ describe('PlayerDoubleMissiles', () => {
     }
   });
 
-  it('is unavailable outside the player turn', () => {
+  it('is unavailable outside the player turn and below DOUBLE_MISSILES_PRICE points', () => {
     expect(missiles.state()).toBe('unavailable');
     missiles.toggle();
     expect(missiles.armed()).toBe(false);
     game.startBattle();
+    expect(missiles.state()).toBe('unavailable');
+    earnPoints(game);
     expect(missiles.state()).toBe('ready');
   });
 
   it('picks and unpicks up to 2 new cells, ignoring a third and cells already shot', () => {
     game.startBattle();
+    earnPoints(game);
     game.fire(PLAYER, at(5, 5));
     game.passTurn(COMPUTER);
+    const logLength = game.log().length;
     missiles.toggleTarget(at(0, 0));
     expect(missiles.targets()).toEqual([]);
 
@@ -52,11 +57,13 @@ describe('PlayerDoubleMissiles', () => {
     missiles.toggleTarget(at(0, 0));
     expect(missiles.targets()).toEqual([at(3, 3)]);
     expect(missiles.ready()).toBe(false);
-    expect(game.log()).toHaveLength(2);
+    expect(game.log()).toHaveLength(logLength);
   });
 
-  it('cancels and clears the picks when pressed again', () => {
+  it('cancels and clears the picks when pressed again, without paying', () => {
     game.startBattle();
+    earnPoints(game);
+    const logLength = game.log().length;
     missiles.toggle();
     missiles.toggleTarget(at(0, 0));
     missiles.toggle();
@@ -65,13 +72,14 @@ describe('PlayerDoubleMissiles', () => {
 
     missiles.toggle();
     expect(missiles.targets()).toEqual([]);
-    expect(game.log()).toEqual([]);
+    expect(game.log()).toHaveLength(logLength);
   });
 
   it('is never active together with the Radar or the Shotgun', () => {
     const radar = TestBed.inject(PlayerRadar);
     const shotgun = TestBed.inject(PlayerShotgun);
     game.startBattle();
+    earnPoints(game);
     missiles.toggle();
     missiles.toggleTarget(at(0, 0));
 
@@ -86,15 +94,17 @@ describe('PlayerDoubleMissiles', () => {
     expect(shotgun.armed()).toBe(false);
   });
 
-  it('fires both missiles in the order picked and hands the turn to the computer', () => {
+  it('fires both missiles in the order picked, pays after them, and hands the turn over', () => {
     game.startBattle();
+    earnPoints(game);
+    const logLength = game.log().length;
     missiles.toggle();
     missiles.toggleTarget(at(5, 5));
     expect(missiles.fire()).toBe(false);
     missiles.toggleTarget(at(0, 0));
     expect(missiles.fire()).toBe(true);
 
-    expect(game.log()).toEqual([
+    expect(game.log().slice(logLength)).toEqual([
       {
         kind: 'shot',
         seat: PLAYER,
@@ -109,6 +119,7 @@ describe('PlayerDoubleMissiles', () => {
         outcome: { kind: 'hit', shipId: 'ship-1' },
         power: 'double-missiles',
       },
+      { kind: 'power', seat: PLAYER, power: 'double-missiles', cost: DOUBLE_MISSILES_PRICE },
     ]);
     expect(game.turn()).toBe(COMPUTER);
     expect(missiles.armed()).toBe(false);

@@ -8,6 +8,7 @@ App-wide singletons, instantiated once per application (per request under SSR).
 | `guards/`   | Functional route guards (`CanActivateFn`), e.g. block `/battle` while the phase is `placing`.                                                          |
 | `models/`   | UI-only types and `InjectionToken`s (config, RNG). Game types (`Coord`, `Seat`, `Phase`, ...) come from `@sinkmyship/game`. Never redeclare them here. |
 | `utils/`    | Plain classes and functions used by services, e.g. `Countdown`.                                                                                        |
+| `testing/`  | Helpers for specs only, e.g. `earnPoints()` (real hits so a spec can pay for superpowers).                                                             |
 
 Each service, util and guard has its own folder, with its test beside it:
 `services/game-store/game-store.ts` and `services/game-store/game-store.spec.ts`.
@@ -20,7 +21,7 @@ Add `interceptors/` when an HTTP backend exists.
 | ---------------------- | --------------------------------------------------------------------------------------------------------- |
 | `GameStore`            | The game state. Wraps every rule call from `@sinkmyship/game`; no timers, no decisions.                   |
 | `PlayerPlacement`      | The player's placement: selected ship, blocks, Remove, Ready, the five-minute clock.                      |
-| `PlayerTurn`           | The player's battle turn: firing at the computer's board and the 10-second turn clock.                    |
+| `PlayerTurn`           | The player's battle turn: firing at the computer's board and the 25-second turn clock.                    |
 | `ComputerPlayer`       | The computer: random fleet, firing three seconds into its turn. Aiming is `chooseShot` (rules).           |
 | `MatchController`      | Starts a game and decides who acts next. Swap `ComputerPlayer` for a network seat here later.             |
 | `ScoreKeeper`          | Each side's score, replayed from the game log through `scoreLog` (rules). Holds no state.                 |

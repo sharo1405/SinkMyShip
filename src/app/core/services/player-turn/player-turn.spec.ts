@@ -6,6 +6,7 @@ import { GameStore } from '@core/services/game-store/game-store';
 import { PlayerDoubleMissiles } from '@core/services/player-double-missiles/player-double-missiles';
 import { PlayerRadar } from '@core/services/player-radar/player-radar';
 import { PlayerShotgun } from '@core/services/player-shotgun/player-shotgun';
+import { earnPoints } from '@core/testing/earn-points';
 import { PlayerTurn } from './player-turn';
 
 const at = (row: number, col: number): Coord => ({ row, col });
@@ -75,13 +76,21 @@ describe('PlayerTurn', () => {
 
   it('scans instead of firing while the radar is aimed, and keeps the turn', () => {
     const radar = TestBed.inject(PlayerRadar);
+    earnPoints(game);
+    const logLength = game.log().length;
     turn.start(done);
     radar.toggleAiming();
 
     turn.targetCell(at(0, 0));
 
     expect(radar.scan()?.found.length).toBeGreaterThan(0);
-    expect(game.log()).toEqual([]);
+    // Only the scan's payment: nothing was fired.
+    expect(
+      game
+        .log()
+        .slice(logLength)
+        .map((e) => e.kind),
+    ).toEqual(['power']);
     expect(game.enemyView()?.cells[0]?.[0]).toBe('unknown');
     expect(turn.active()).toBe(true);
     expect(done).not.toHaveBeenCalled();
@@ -89,12 +98,20 @@ describe('PlayerTurn', () => {
 
   it('blocks firing while a scan is showing, then fires normally', () => {
     const radar = TestBed.inject(PlayerRadar);
+    earnPoints(game);
+    const logLength = game.log().length;
     turn.start(done);
     radar.toggleAiming();
     turn.targetCell(at(0, 0));
 
     turn.targetCell(at(0, 0));
-    expect(game.log()).toEqual([]);
+    // Only the scan's payment: nothing was fired.
+    expect(
+      game
+        .log()
+        .slice(logLength)
+        .map((e) => e.kind),
+    ).toEqual(['power']);
 
     vi.advanceTimersByTime(RADAR_REVEAL_MS);
     turn.targetCell(at(0, 0));
@@ -104,6 +121,8 @@ describe('PlayerTurn', () => {
 
   it('cancels radar aiming when the turn runs out', () => {
     const radar = TestBed.inject(PlayerRadar);
+    earnPoints(game);
+    const logLength = game.log().length;
     turn.start(done);
     radar.toggleAiming();
     vi.advanceTimersByTime(TURN_TIME_LIMIT_MS);
@@ -113,14 +132,17 @@ describe('PlayerTurn', () => {
 
   it('fires the armed Shotgun as the whole turn: 5 shots, one handoff', () => {
     const shots = TestBed.inject(PlayerShotgun);
+    earnPoints(game);
+    const logLength = game.log().length;
     turn.start(done);
     turn.fireShotgun();
-    expect(game.log()).toEqual([]);
+    expect(game.log()).toHaveLength(logLength);
 
     shots.toggle();
     turn.fireShotgun();
 
-    expect(game.log()).toHaveLength(5);
+    // Five shots, then the payment.
+    expect(game.log()).toHaveLength(logLength + 5 + 1);
     expect(game.turn()).toBe(COMPUTER);
     expect(turn.active()).toBe(false);
     expect(turn.timeLeftMs()).toBeNull();
@@ -129,27 +151,32 @@ describe('PlayerTurn', () => {
 
   it('cancels an armed Shotgun and skips the turn when the clock runs out', () => {
     const shots = TestBed.inject(PlayerShotgun);
+    earnPoints(game);
+    const logLength = game.log().length;
     turn.start(done);
     shots.toggle();
     vi.advanceTimersByTime(TURN_TIME_LIMIT_MS);
 
     expect(shots.armed()).toBe(false);
-    expect(game.log()).toEqual([{ kind: 'timeout', seat: PLAYER }]);
+    expect(game.log().slice(logLength)).toEqual([{ kind: 'timeout', seat: PLAYER }]);
     expect(done).toHaveBeenCalledTimes(1);
   });
 
   it('picks targets instead of firing while Double Missiles is armed, then fires both as the turn', () => {
     const missiles = TestBed.inject(PlayerDoubleMissiles);
+    earnPoints(game);
+    const logLength = game.log().length;
     turn.start(done);
     missiles.toggle();
     turn.targetCell(at(0, 0));
     turn.targetCell(at(3, 3));
-    expect(game.log()).toEqual([]);
+    expect(game.log()).toHaveLength(logLength);
     expect(turn.active()).toBe(true);
 
     turn.fireDoubleMissiles();
 
-    expect(game.log()).toHaveLength(2);
+    // Two missiles, then the payment.
+    expect(game.log()).toHaveLength(logLength + 2 + 1);
     expect(game.turn()).toBe(COMPUTER);
     expect(turn.timeLeftMs()).toBeNull();
     expect(done).toHaveBeenCalledTimes(1);
@@ -157,6 +184,8 @@ describe('PlayerTurn', () => {
 
   it('cancels an armed Double Missiles and skips the turn when the clock runs out', () => {
     const missiles = TestBed.inject(PlayerDoubleMissiles);
+    earnPoints(game);
+    const logLength = game.log().length;
     turn.start(done);
     missiles.toggle();
     turn.targetCell(at(0, 0));
@@ -164,7 +193,7 @@ describe('PlayerTurn', () => {
 
     expect(missiles.armed()).toBe(false);
     expect(missiles.targets()).toEqual([]);
-    expect(game.log()).toEqual([{ kind: 'timeout', seat: PLAYER }]);
+    expect(game.log().slice(logLength)).toEqual([{ kind: 'timeout', seat: PLAYER }]);
   });
 
   it('ignores shots outside the player turn', () => {

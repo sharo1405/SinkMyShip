@@ -12,14 +12,16 @@ export interface Volley {
 
 /**
  * The volley at the end of the log, if the latest turn was one: the trailing shots fired by
- * the same superpower, all by the same seat. A volley is a whole turn, so the previous
- * turn's entries always belong to the other seat or to a different action.
+ * the same superpower, all by the same seat, looking past the payment logged after them. A
+ * volley is a whole turn, so the previous turn's entries always belong to the other seat or
+ * to a different action.
  */
 export function lastVolley(log: readonly LogEntry[]): Volley | null {
-  const last = log.at(-1);
+  const paid = log.at(-1)?.kind === 'power' ? 1 : 0;
+  const last = log.at(-1 - paid);
   if (last?.kind !== 'shot' || !last.power) return null;
   const shots: ShotEntry[] = [];
-  for (let i = log.length - 1; i >= 0; i--) {
+  for (let i = log.length - 1 - paid; i >= 0; i--) {
     const entry = log[i];
     if (entry?.kind !== 'shot' || entry.power !== last.power || entry.seat !== last.seat) {
       break;

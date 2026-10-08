@@ -33,7 +33,12 @@
   box-sizing: border-box;
   width: 100%;
   /* Fixed, so blocks line up even when one has its action button under it. */
-  height: 3.5rem;
+  height: 4.25rem;
+}
+
+.price {
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 /* Each block, with its action button (if shown) centred under it. */
@@ -96,6 +101,11 @@ button.power.active {
 button.power:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* Too expensive for now: a dashed border as well as the fade, not colour alone. */
+button.power.unaffordable {
+  border-style: dashed;
 }
 
 /* On (e.g. the Shield is up): pressed look at full strength, nothing to press. */

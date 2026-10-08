@@ -4,8 +4,13 @@
     >{{ score().points }} <span class="unit">{{ unit() }}</span></span
   >
   <span class="badge-slot">
-    @for (badge of badges(); track badge.shot) {
-      <span class="badge" [class.bonus]="badge.bonus" [class.penalty]="!badge.bonus">
+    @for (badge of badges(); track badge.id) {
+      <span
+        class="badge"
+        [class.bonus]="badge.bonus"
+        [class.penalty]="!badge.bonus"
+        [class.after]="!$first"
+      >
         {{ badge.text }}
       </span>
     }

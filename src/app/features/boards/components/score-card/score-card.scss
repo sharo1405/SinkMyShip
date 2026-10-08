@@ -4,7 +4,7 @@
 
 .score {
   display: grid;
-  grid-template-columns: auto auto 9rem;
+  grid-template-columns: auto auto minmax(9rem, auto);
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0.75rem;
@@ -59,6 +59,18 @@
   100% {
     opacity: 0;
   }
+}
+
+/* A shot badge and a payment badge side by side. */
+.badge-slot {
+  display: flex;
+  gap: 0.25rem;
+}
+
+/* The payment after a power's shots pops up just after their badge. */
+.badge.after {
+  animation-delay: 0.4s;
+  animation-fill-mode: both;
 }
 
 /* No pop or fade: the badge simply stays until the side's next shot. */

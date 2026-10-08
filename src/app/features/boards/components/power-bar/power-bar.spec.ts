@@ -12,8 +12,10 @@ describe('PowerBar', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     const list = root.querySelector('ul[aria-label="Your superpowers"]');
-    const blocks = [...(list?.querySelectorAll('li') ?? [])].map((b) => b.textContent?.trim());
-    expect(blocks).toEqual(['Radar', 'Shotgun', 'Double Missiles', 'Shield']);
+    const part = (cls: string) =>
+      [...(list?.querySelectorAll(`li .${cls}`) ?? [])].map((b) => b.textContent?.trim());
+    expect(part('name')).toEqual(['Radar', 'Shotgun', 'Double Missiles', 'Shield']);
+    expect(part('price')).toEqual(['2 pts', '5 pts', '4 pts', '6 pts']);
     expect(root.querySelector('button')).toBeNull();
   });
 
@@ -32,7 +34,7 @@ describe('PowerBar', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     const buttons = () => [...root.querySelectorAll('button')];
-    expect(buttons().map((b) => b.textContent?.trim())).toEqual(['Radar']);
+    expect(buttons().map((b) => b.querySelector('.name')?.textContent?.trim())).toEqual(['Radar']);
     expect(buttons()[0]?.getAttribute('aria-pressed')).toBe('false');
     buttons()[0]?.click();
     expect(activated).toEqual(['radar']);
@@ -103,8 +105,37 @@ describe('PowerBar', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     const buttons = [...root.querySelectorAll('button')];
-    expect(buttons.map((b) => b.textContent?.trim())).toEqual(['Shield']);
+    expect(buttons.map((b) => b.querySelector('.name')?.textContent?.trim())).toEqual(['Shield']);
     expect(buttons[0]?.disabled).toBe(true);
     expect(buttons[0]?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('marks the powers the side cannot afford, visibly and in their accessible names', async () => {
+    const fixture = TestBed.createComponent(PowerBar);
+    fixture.componentRef.setInput('label', 'Your superpowers');
+    fixture.componentRef.setInput('powers', SUPERPOWERS);
+    fixture.componentRef.setInput('states', {
+      radar: 'ready',
+      shotgun: 'unavailable',
+      'double-missiles': 'unavailable',
+      shield: 'unavailable',
+    });
+    fixture.componentRef.setInput('points', 2);
+    await fixture.whenStable();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const buttons = [...root.querySelectorAll('button')];
+    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Radar, costs 2 points',
+      'Shotgun, costs 5 points, you have 2',
+      'Double Missiles, costs 4 points, you have 2',
+      'Shield, costs 6 points, you have 2',
+    ]);
+    expect(buttons.map((b) => b.classList.contains('unaffordable'))).toEqual([
+      false,
+      true,
+      true,
+      true,
+    ]);
   });
 });

@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { COMPUTER, PLAYER } from '@core/models/seats';
 import { GameStore } from '@core/services/game-store/game-store';
-import { coordLabel, RADAR_REVEAL_MS, type Coord } from '@sinkmyship/game';
+import { ScoreKeeper } from '@core/services/score-keeper/score-keeper';
+import { earnPoints } from '@core/testing/earn-points';
+import { coordLabel, RADAR_PRICE, RADAR_REVEAL_MS, type Coord } from '@sinkmyship/game';
 import { PlayerRadar } from './player-radar';
 
 const at = (row: number, col: number): Coord => ({ row, col });
@@ -29,19 +31,28 @@ describe('PlayerRadar', () => {
     vi.useRealTimers();
   });
 
-  it('is unavailable outside the player turn', () => {
+  const points = () => TestBed.inject(ScoreKeeper).player().points;
+
+  it('is unavailable outside the player turn and below RADAR_PRICE points', () => {
+    expect(radar.state()).toBe('unavailable');
+    game.startBattle();
     expect(radar.state()).toBe('unavailable');
     radar.toggleAiming();
     expect(radar.aiming()).toBe(false);
 
-    game.startBattle();
+    earnPoints(game, 1);
+    expect(radar.state()).toBe('unavailable');
+    earnPoints(game, 1);
+    expect(points()).toBe(RADAR_PRICE);
     expect(radar.state()).toBe('ready');
     game.fire(PLAYER, at(5, 5));
     expect(radar.state()).toBe('unavailable');
   });
 
-  it('cancels aiming only by pressing Radar again, without scanning', () => {
+  it('cancels aiming only by pressing Radar again, without scanning or paying', () => {
     game.startBattle();
+    earnPoints(game);
+    const logLength = game.log().length;
     radar.toggleAiming();
     expect(radar.aiming()).toBe(true);
     expect(radar.state()).toBe('active');
@@ -50,14 +61,19 @@ describe('PlayerRadar', () => {
     expect(radar.aiming()).toBe(false);
     expect(radar.state()).toBe('ready');
     expect(radar.scan()).toBeNull();
+    expect(game.log()).toHaveLength(logLength);
+    expect(points()).toBe(6);
   });
 
-  it('scans a row and column, shows what it found for RADAR_REVEAL_MS, then clears', () => {
+  it('scans a row and column for RADAR_PRICE, shows what it found for RADAR_REVEAL_MS', () => {
     game.startBattle();
+    earnPoints(game);
+    const logLength = game.log().length;
     radar.scanAt(at(0, 0));
     expect(radar.scan()).toBeNull();
 
     radar.toggleAiming();
+    expect(points()).toBe(6);
     radar.scanAt(at(2, 1));
 
     expect(radar.aiming()).toBe(false);
@@ -66,7 +82,10 @@ describe('PlayerRadar', () => {
     expect(radar.scan()?.cells).toHaveLength(11);
     expect(radar.scanning()).toBe(true);
     expect(game.isTurnOf(PLAYER)).toBe(true);
-    expect(game.log()).toEqual([]);
+    expect(game.log().slice(logLength)).toEqual([
+      { kind: 'power', seat: PLAYER, power: 'radar', cost: RADAR_PRICE },
+    ]);
+    expect(points()).toBe(6 - RADAR_PRICE);
 
     vi.advanceTimersByTime(RADAR_REVEAL_MS - 1);
     expect(radar.scanning()).toBe(true);
@@ -74,8 +93,9 @@ describe('PlayerRadar', () => {
     expect(radar.scan()).toBeNull();
   });
 
-  it('can be used several times in one turn, once each scan has cleared', () => {
+  it('charges each scan, so it can scan again in the same turn while points last', () => {
     game.startBattle();
+    earnPoints(game);
     radar.toggleAiming();
     radar.scanAt(at(0, 0));
     // Not while a scan is showing, so two results never overlap.
@@ -93,12 +113,15 @@ describe('PlayerRadar', () => {
     radar.toggleAiming();
     radar.scanAt(at(5, 5));
     expect(radar.scan()?.found).toEqual([]);
+    expect(points()).toBe(0);
+    vi.advanceTimersByTime(RADAR_REVEAL_MS);
+    expect(radar.state()).toBe('unavailable');
     expect(game.isTurnOf(PLAYER)).toBe(true);
-    expect(game.log()).toEqual([]);
   });
 
   it('clears the scan and its timer on stop', () => {
     game.startBattle();
+    earnPoints(game);
     radar.toggleAiming();
     radar.scanAt(at(0, 0));
     radar.stop();

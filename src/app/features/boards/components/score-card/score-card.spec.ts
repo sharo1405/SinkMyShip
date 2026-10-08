@@ -3,12 +3,20 @@ import { INITIAL_SCORE, type ScoreChange, type SeatScore } from '@sinkmyship/gam
 import { ScoreCard } from './score-card';
 
 /** A score whose latest shot (number `shots`) scored `last`. Streak counts don't matter here. */
-const score = (points: number, shots: number, last: ScoreChange | null): SeatScore => ({
+const score = (
+  points: number,
+  shots: number,
+  last: ScoreChange | null,
+  payment: SeatScore['payment'] = null,
+  payments = payment ? 1 : 0,
+): SeatScore => ({
   points,
   shots,
   hitStreak: 0,
   missStreak: 0,
   last,
+  payments,
+  payment,
 });
 
 describe('ScoreCard', () => {
@@ -75,5 +83,29 @@ describe('ScoreCard', () => {
 
     await show(score(0, 2, { kind: 'second-miss', delta: 0 }));
     expect(text()).toBe('Your score 0 pts');
+  });
+
+  it('shows a payment badge, after the badge of the shots that power fired', async () => {
+    const { text, show } = await render(score(4, 3, null, { power: 'radar', delta: -2 }));
+    expect(text()).toBe('Your score 4 pts -2 Radar');
+
+    await show(
+      score(
+        5,
+        8,
+        { kind: 'hit-streak', delta: 4, power: 'shotgun' },
+        { power: 'shotgun', delta: -5 },
+        2,
+      ),
+    );
+    expect(text()).toBe('Your score 5 pts +4 streak! -5 Shotgun');
+  });
+
+  it("hides an earlier shot's badge next to a payment for a power that fired nothing", async () => {
+    const { text, show } = await render(score(6, 3, { kind: 'hit-streak', delta: 4 }));
+    expect(text()).toBe('Your score 6 pts +4 streak!');
+
+    await show(score(0, 3, { kind: 'hit-streak', delta: 4 }, { power: 'shield', delta: -6 }));
+    expect(text()).toBe('Your score 0 pts -6 Shield');
   });
 });

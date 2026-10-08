@@ -1,5 +1,6 @@
 import { PLAYER } from '@core/models/seats';
 import { coordLabel, type LogEntry } from '@sinkmyship/game';
+import { describePayment } from './describe-payment';
 import { describeBlocked } from './shield/describe-blocked';
 
 /** One line describing a turn from the game log, from the player's point of view. */
@@ -10,6 +11,7 @@ export function describeTurn(entry: LogEntry): string {
       : 'The computer ran out of time.';
   }
   if (entry.kind === 'blocked') return describeBlocked(entry);
+  if (entry.kind === 'power') return describePayment(entry);
   const mine = entry.seat === PLAYER;
   const cell = coordLabel(entry.at);
   const outcome = entry.outcome;

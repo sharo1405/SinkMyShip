@@ -29,6 +29,7 @@
             [powers]="superpowers"
             [states]="playerPowerStates()"
             [actionDisabled]="playerActionDisabled()"
+            [points]="scores.player().points"
             (activate)="usePower($event)"
             (runAction)="runPowerAction($event)"
           />

@@ -2,7 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { COMPUTER, PLAYER } from '@core/models/seats';
 import { GameStore } from '@core/services/game-store/game-store';
 import { PlayerDoubleMissiles } from '@core/services/player-double-missiles/player-double-missiles';
-import type { Coord } from '@sinkmyship/game';
+import { ScoreKeeper } from '@core/services/score-keeper/score-keeper';
+import { earnPoints } from '@core/testing/earn-points';
+import { SHIELD_PRICE, type Coord } from '@sinkmyship/game';
 import { PlayerShield, SHIELD_ALERT_MS } from './player-shield';
 
 const at = (row: number, col: number): Coord => ({ row, col });
@@ -30,7 +32,10 @@ describe('PlayerShield', () => {
     vi.useRealTimers();
   });
 
-  it('goes up with one press, stays on with no cancel, and keeps the turn', () => {
+  it('goes up with one press for SHIELD_PRICE, stays on with no cancel, and keeps the turn', () => {
+    expect(shield.state()).toBe('unavailable');
+    earnPoints(game);
+    const logLength = game.log().length;
     expect(shield.state()).toBe('ready');
     shield.activate();
     expect(shield.up()).toBe(true);
@@ -39,11 +44,15 @@ describe('PlayerShield', () => {
     shield.activate();
     expect(shield.up()).toBe(true);
     expect(game.isTurnOf(PLAYER)).toBe(true);
-    expect(game.log()).toEqual([]);
+    expect(game.log().slice(logLength)).toEqual([
+      { kind: 'power', seat: PLAYER, power: 'shield', cost: SHIELD_PRICE },
+    ]);
+    expect(TestBed.inject(ScoreKeeper).player().points).toBe(6 - SHIELD_PRICE);
   });
 
   it('cancels a power being aimed', () => {
     const missiles = TestBed.inject(PlayerDoubleMissiles);
+    earnPoints(game);
     missiles.toggle();
     missiles.toggleTarget(at(0, 0));
     shield.activate();
@@ -52,6 +61,7 @@ describe('PlayerShield', () => {
   });
 
   it("flashes for SHIELD_ALERT_MS after it blocks the computer's shot, then is gone", () => {
+    earnPoints(game);
     shield.activate();
     game.fire(PLAYER, at(5, 5));
     shield.alertIfJustBlocked();
@@ -70,6 +80,7 @@ describe('PlayerShield', () => {
   });
 
   it('stays up through a computer turn lost to the clock, and stop clears a flash', () => {
+    earnPoints(game);
     shield.activate();
     game.fire(PLAYER, at(5, 5));
     game.passTurn(COMPUTER);

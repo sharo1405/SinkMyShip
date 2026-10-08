@@ -1,10 +1,14 @@
 import { Component, computed, input } from '@angular/core';
+import { SUPERPOWERS } from '@core/models/superpowers';
 import type { SeatScore } from '@sinkmyship/game';
 
-/** The pop-up note for a shot that earned a bonus or a penalty... */
+/** The pop-up note for a shot that earned a bonus or a penalty, or for a power paid for. */
 interface Badge {
-  /** The side's shot count, so each new triggering shot gets a fresh badge. */
-  readonly shot: number;
+  /**
+   * Which shot or payment this is (`shot-<n>`, `paid-<n>`), so each new one gets a fresh
+   * element and replays its animation, while the opponent's moves leave it alone.
+   */
+  readonly id: string;
   readonly text: string;
   readonly bonus: boolean;
 }
@@ -14,7 +18,8 @@ interface Badge {
  * ("+4 streak!") or a miss penalty ("-2 two misses", "-1 miss streak"), a short badge pops up
  * and fades. The badge shows the points actually removed, which is less near the zero floor,
  * and none at all when the side had no points to lose. It is removed on the side's next
- * ordinary shot.
+ * ordinary shot. Paying for a superpower shows "-2 Radar" the same way; after a power that
+ * fires, its shot badge comes first and the payment badge pops up just after it.
  */
 @Component({
   selector: 'app-score-card',
@@ -29,23 +34,34 @@ export class ScoreCard {
   protected readonly unit = computed(() => (Math.abs(this.score().points) === 1 ? 'pt' : 'pts'));
 
   /**
-   * Zero or one badge, as a list tracked by shot number: misses in a row can trigger badges
-   * on consecutive shots, and a fresh element per shot replays the pop-and-fade animation.
-   * The opponent's shots don't change `shots`, so they don't replay it.
+   * Up to two badges, in the order they happened: the latest shot's, then the payment for
+   * the power that fired it. Tracked by `id`, so misses in a row (or scans in a row) replay
+   * the pop-and-fade animation each time, and the opponent's moves don't.
    */
   protected readonly badges = computed<readonly Badge[]>(() => {
-    const { last, shots } = this.score();
+    const { last, shots, payment, payments } = this.score();
+    const badges: Badge[] = [];
+    // With a payment, only a shot fired by that same power belongs to the latest action.
+    const shotIsLatest = !payment || last?.power === payment.power;
     // A penalty at 0 points removes nothing (scores stop at 0), so there is nothing to show.
-    if (!last || last.delta === 0) return [];
-    switch (last.kind) {
-      case 'hit-streak':
-        return [{ shot: shots, text: `+${last.delta} streak!`, bonus: true }];
-      case 'second-miss':
-        return [{ shot: shots, text: `${last.delta} two misses`, bonus: false }];
-      case 'miss-streak':
-        return [{ shot: shots, text: `${last.delta} miss streak`, bonus: false }];
-      default:
-        return [];
+    if (last && last.delta !== 0 && shotIsLatest) {
+      const id = `shot-${shots}`;
+      switch (last.kind) {
+        case 'hit-streak':
+          badges.push({ id, text: `+${last.delta} streak!`, bonus: true });
+          break;
+        case 'second-miss':
+          badges.push({ id, text: `${last.delta} two misses`, bonus: false });
+          break;
+        case 'miss-streak':
+          badges.push({ id, text: `${last.delta} miss streak`, bonus: false });
+          break;
+      }
     }
+    if (payment && payment.delta < 0) {
+      const name = SUPERPOWERS.find((p) => p.id === payment.power)?.label ?? payment.power;
+      badges.push({ id: `paid-${payments}`, text: `${payment.delta} ${name}`, bonus: false });
+    }
+    return badges;
   });
 }
