@@ -13,22 +13,33 @@
 
   <h1>Battle</h1>
   @if (size(); as size) {
-    @let showScores = game.phase() === 'battle' || game.phase() === 'over';
+    @let battleBegun = game.phase() === 'battle' || game.phase() === 'over';
     <div class="boards">
       <section class="side">
-        @if (showScores) {
+        @if (battleBegun) {
           <app-score-card label="Your score" [score]="scores.player()" />
         }
         <app-player-board [size]="size" [shipColor]="shipColor()" />
         @if (game.phase() === 'placing') {
           <app-placement-controls [shipColor]="shipColor()" />
         }
+        @if (battleBegun) {
+          <app-power-bar
+            label="Your superpowers"
+            [powers]="superpowers"
+            [states]="playerPowerStates()"
+            (activate)="usePower($event)"
+          />
+        }
       </section>
       <section class="side">
-        @if (showScores) {
+        @if (battleBegun) {
           <app-score-card label="Computer's score" [score]="scores.computer()" />
         }
         <app-computer-board [size]="size" />
+        @if (battleBegun) {
+          <app-power-bar label="Computer's superpowers" [powers]="superpowers" />
+        }
       </section>
     </div>
 

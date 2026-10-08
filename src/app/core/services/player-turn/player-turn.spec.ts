@@ -1,8 +1,9 @@
 import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { COMPUTER, PLAYER } from '@core/models/seats';
-import { TURN_TIME_LIMIT_MS, type Coord } from '@sinkmyship/game';
+import { RADAR_REVEAL_MS, TURN_TIME_LIMIT_MS, type Coord } from '@sinkmyship/game';
 import { GameStore } from '@core/services/game-store/game-store';
+import { PlayerRadar } from '@core/services/player-radar/player-radar';
 import { PlayerTurn } from './player-turn';
 
 const at = (row: number, col: number): Coord => ({ row, col });
@@ -13,7 +14,9 @@ describe('PlayerTurn', () => {
   let done: Mock<() => void>;
 
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+    vi.useFakeTimers({
+      toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'Date'],
+    });
     game = TestBed.inject(GameStore);
     turn = TestBed.inject(PlayerTurn);
     done = vi.fn<() => void>();
@@ -57,7 +60,7 @@ describe('PlayerTurn', () => {
     expect(done).toHaveBeenCalledTimes(1);
   });
 
-  it('skips the turn when the 40 second clock runs out', () => {
+  it('skips the turn when the turn clock runs out', () => {
     turn.start(done);
     vi.advanceTimersByTime(TURN_TIME_LIMIT_MS - 1_000);
     expect(done).not.toHaveBeenCalled();
@@ -66,6 +69,44 @@ describe('PlayerTurn', () => {
     expect(game.log()).toEqual([{ kind: 'timeout', seat: PLAYER }]);
     expect(game.turn()).toBe(COMPUTER);
     expect(done).toHaveBeenCalledTimes(1);
+  });
+
+  it('scans instead of firing while the radar is aimed, and keeps the turn', () => {
+    const radar = TestBed.inject(PlayerRadar);
+    turn.start(done);
+    radar.toggleAiming();
+
+    turn.targetCell(at(0, 0));
+
+    expect(radar.scan()?.found.length).toBeGreaterThan(0);
+    expect(game.log()).toEqual([]);
+    expect(game.enemyView()?.cells[0]?.[0]).toBe('unknown');
+    expect(turn.active()).toBe(true);
+    expect(done).not.toHaveBeenCalled();
+  });
+
+  it('blocks firing while a scan is showing, then fires normally', () => {
+    const radar = TestBed.inject(PlayerRadar);
+    turn.start(done);
+    radar.toggleAiming();
+    turn.targetCell(at(0, 0));
+
+    turn.targetCell(at(0, 0));
+    expect(game.log()).toEqual([]);
+
+    vi.advanceTimersByTime(RADAR_REVEAL_MS);
+    turn.targetCell(at(0, 0));
+    expect(game.enemyView()?.cells[0]?.[0]).toBe('hit');
+    expect(done).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels radar aiming when the turn runs out', () => {
+    const radar = TestBed.inject(PlayerRadar);
+    turn.start(done);
+    radar.toggleAiming();
+    vi.advanceTimersByTime(TURN_TIME_LIMIT_MS);
+    expect(radar.aiming()).toBe(false);
+    expect(radar.scan()).toBeNull();
   });
 
   it('ignores shots outside the player turn', () => {

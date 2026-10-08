@@ -1,0 +1,21 @@
+<ul class="powers" [attr.aria-label]="label()">
+  @for (power of powers(); track power.id) {
+    <li>
+      @let state = states()[power.id];
+      @if (state) {
+        <button
+          type="button"
+          class="power"
+          [class.active]="state === 'active'"
+          [disabled]="state === 'unavailable'"
+          [attr.aria-pressed]="state === 'active'"
+          (click)="activate.emit(power.id)"
+        >
+          {{ power.label }}
+        </button>
+      } @else {
+        <span class="power">{{ power.label }}</span>
+      }
+    </li>
+  }
+</ul>

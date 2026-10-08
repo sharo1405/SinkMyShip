@@ -2,7 +2,9 @@ import { Component, computed, inject } from '@angular/core';
 import { PLAYER } from '@core/models/seats';
 import { GameStore } from '@core/services/game-store/game-store';
 import { PlayerPlacement } from '@core/services/player-placement/player-placement';
+import { PlayerRadar } from '@core/services/player-radar/player-radar';
 import { PlayerTurn } from '@core/services/player-turn/player-turn';
+import { describeRadar } from '../../utils/describe-radar';
 import { describeTurn } from '../../utils/describe-turn';
 
 /**
@@ -24,6 +26,7 @@ export class BattleStatus {
   private readonly game = inject(GameStore);
   private readonly placement = inject(PlayerPlacement);
   private readonly turn = inject(PlayerTurn);
+  private readonly radar = inject(PlayerRadar);
 
   protected readonly message = computed(() => {
     switch (this.game.phase()) {
@@ -32,6 +35,11 @@ export class BattleStatus {
         if (this.placement.canReady()) return 'All ships placed. Press Ready to start the battle.';
         return 'Pick a ship under your board, then click its blocks on your board.';
       case 'battle': {
+        const scan = this.radar.scan();
+        if (scan) return `${describeRadar(scan)} Fire when the scan ends.`;
+        if (this.radar.aiming()) {
+          return "Pick a cell to scan its row and column on the computer's board. Press Radar again to cancel.";
+        }
         const last = this.game.log().at(-1);
         const lead = last
           ? describeTurn(last)

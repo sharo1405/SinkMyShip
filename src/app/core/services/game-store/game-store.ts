@@ -3,6 +3,7 @@ import { COMPUTER, PLAYER } from '@core/models/seats';
 import {
   canFire,
   canStartBattle,
+  canUseRadar,
   createGame,
   fire,
   fleetFor,
@@ -12,6 +13,7 @@ import {
   placeShip,
   removeShip,
   startBattle,
+  useRadar,
   type Board,
   type BoardSize,
   type Coord,
@@ -19,6 +21,7 @@ import {
   type LogEntry,
   type OpponentView,
   type Phase,
+  type RadarScan,
   type Rng,
   type Seat,
   type ShipSpec,
@@ -108,18 +111,37 @@ export class GameStore {
     this.commit((game) => passTurn(game, seat));
   }
 
+  /** Whether `seat` may use its radar now. Reads signals, so use it in `computed`. */
+  canUseRadar(seat: Seat): boolean {
+    const state = this.state();
+    return state !== null && canUseRadar(state, seat);
+  }
+
+  /**
+   * `seat` scans the opponent's board at `at`. Returns only what the scan found, so the
+   * caller never sees the opponent's board itself.
+   */
+  useRadar(seat: Seat, at: Coord): RadarScan | null {
+    return this.commit((game) => useRadar(game, seat, at));
+  }
+
   private viewFor(seat: Seat): OpponentView | null {
     const state = this.state();
     return state ? opponentView(state, seat) : null;
   }
 
-  /** The only way game state changes: apply a mutating rule call to a fresh clone. */
-  private commit(change: (game: GameState) => void): void {
+  /**
+   * The only way game state changes: apply a mutating rule call to a fresh clone. Returns the
+   * rule's result, or `null` when there is no game.
+   */
+  private commit<T>(change: (game: GameState) => T): T | null {
+    let result: T | null = null;
     this.state.update((current) => {
       if (!current) return current;
       const next = structuredClone(current);
-      change(next);
+      result = change(next);
       return next;
     });
+    return result;
   }
 }

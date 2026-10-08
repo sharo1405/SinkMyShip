@@ -19,6 +19,10 @@ interface BoardCell {
   readonly mark: CellMark;
   readonly glyph: string;
   readonly rejected: boolean;
+  /** In the row or column of a radar scan being shown. */
+  readonly scanned: boolean;
+  /** A ship square a radar scan found: drawn with a white border on top of its mark. */
+  readonly radar: boolean;
   /** Accessible name, e.g. `B3, ship`. */
   readonly name: string;
 }
@@ -59,6 +63,10 @@ const key = ({ row, col }: Coord): string => `${row},${col}`;
  * doesn't rely on colour alone). With `interactive`, every cell is a button that emits
  * `cellClick`. Rendered as a table so screen readers announce each cell's column and row
  * headers.
+ *
+ * Radar results are an overlay, separate from the marks: `scannedCells` are lightly tinted
+ * and `radarCells` get a white border, while each cell keeps its own mark, so a hidden ship
+ * stays water underneath. `aiming` shows a crosshair cursor over the cells.
  */
 @Component({
   selector: 'app-board',
@@ -80,6 +88,9 @@ export class Board {
   readonly hitCells = input<readonly Coord[]>([]);
   readonly sunkCells = input<readonly Coord[]>([]);
   readonly rejected = input<Coord | null>(null);
+  readonly scannedCells = input<readonly Coord[]>([]);
+  readonly radarCells = input<readonly Coord[]>([]);
+  readonly aiming = input(false, { transform: booleanAttribute });
   readonly shipColor = input<string | null>(null);
   readonly interactive = input(false, { transform: booleanAttribute });
 
@@ -106,6 +117,8 @@ export class Board {
     }
     const rejected = this.rejected();
     const rejectedKey = rejected ? key(rejected) : null;
+    const scanned = new Set(this.scannedCells().map(key));
+    const radar = new Set(this.radarCells().map(key));
 
     return Array.from({ length: this.size() }, (_, row) => ({
       number: row + 1,
@@ -115,6 +128,7 @@ export class Board {
         const k = key(at);
         const mark = marks.get(k) ?? 'water';
         const isRejected = k === rejectedKey;
+        const isRadar = radar.has(k);
         return {
           at,
           coord,
@@ -122,7 +136,12 @@ export class Board {
           mark,
           glyph: MARK_GLYPHS[mark],
           rejected: isRejected,
-          name: `${coord}, ${MARK_NAMES[mark]}${isRejected ? ', not allowed' : ''}`,
+          scanned: scanned.has(k),
+          radar: isRadar,
+          name:
+            `${coord}, ${MARK_NAMES[mark]}` +
+            (isRadar ? ', radar: ship square' : '') +
+            (isRejected ? ', not allowed' : ''),
         };
       }),
     }));

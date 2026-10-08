@@ -1,4 +1,4 @@
-<table class="board">
+<table class="board" [class.aiming]="aiming()">
   <caption>
     {{
       label()
@@ -34,6 +34,8 @@
             [class.hit]="cell.mark === 'hit'"
             [class.sunk]="cell.mark === 'sunk'"
             [class.rejected]="cell.rejected"
+            [class.scanned]="cell.scanned"
+            [class.radar]="cell.radar"
           >
             @if (interactive()) {
               <button
@@ -44,7 +46,7 @@
               >
                 <span aria-hidden="true">{{ cell.glyph }}</span>
               </button>
-            } @else if (cell.mark !== 'water') {
+            } @else if (cell.mark !== 'water' || cell.radar) {
               <span aria-hidden="true">{{ cell.glyph }}</span>
               <span class="visually-hidden">{{ cell.name }}</span>
             }

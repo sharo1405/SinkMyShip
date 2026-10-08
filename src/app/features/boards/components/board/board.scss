@@ -68,6 +68,23 @@ th {
   outline-offset: -3px;
 }
 
+/* Radar overlay: a light tint over the scanned row and column, whatever the cell shows. */
+.cell.scanned {
+  background-image: linear-gradient(rgb(255 255 255 / 0.3), rgb(255 255 255 / 0.3));
+}
+
+/*
+ * A ship square the radar found: a white ring with a dark edge on both sides, so it shows on
+ * water, hit and miss cells in both themes. Declared after the marks, so it replaces the
+ * sunk ring while the scan shows.
+ */
+.cell.radar {
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    inset 0 0 0 4.5px rgb(0 0 0 / 0.75),
+    0 0 0 1.5px rgb(0 0 0 / 0.75);
+}
+
 .hit-area {
   display: block;
   width: 100%;
@@ -79,6 +96,10 @@ th {
   color: inherit;
   font: inherit;
   cursor: pointer;
+}
+
+.aiming .hit-area {
+  cursor: crosshair;
 }
 
 .hit-area:focus-visible {

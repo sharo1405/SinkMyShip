@@ -2,18 +2,22 @@ import { computed, DestroyRef, inject, Service, signal } from '@angular/core';
 import type { SeatController } from '@core/models/seat-controller';
 import { PLAYER } from '@core/models/seats';
 import { GameStore } from '@core/services/game-store/game-store';
+import { PlayerRadar } from '@core/services/player-radar/player-radar';
 import { Countdown } from '@core/utils/countdown/countdown';
 import { injectIsBrowser } from '@core/utils/platform/platform';
 import { TurnHandoff } from '@core/utils/turn-handoff/turn-handoff';
 import { TURN_TIME_LIMIT_MS, type Coord } from '@sinkmyship/game';
 
 /**
- * The player's side of the battle: firing at the computer's board and the 40-second turn
- * clock. When the clock runs out the turn is skipped.
+ * The player's side of the battle: firing at the computer's board and the 10-second turn
+ * clock. When the clock runs out the turn is skipped. While the Radar is being aimed, a click
+ * on the computer's board scans instead of firing, and firing waits until the scan's result
+ * has been shown; the radar never ends the turn.
  */
 @Service()
 export class PlayerTurn implements SeatController {
   private readonly game = inject(GameStore);
+  private readonly radar = inject(PlayerRadar);
   private readonly clock = new Countdown(injectIsBrowser());
   private readonly handoff = new TurnHandoff();
 
@@ -42,12 +46,26 @@ export class PlayerTurn implements SeatController {
   stop(): void {
     this.clock.stop();
     this.handoff.cancel();
+    this.radar.stop();
     this.rejectedTargetState.set(null);
   }
 
-  /** Fires at `coord` on the computer's board. A cell already fired at is rejected instead. */
+  /** A click on the computer's board: scans while the Radar is being aimed, else fires. */
+  targetCell(coord: Coord): void {
+    if (this.radar.aiming()) {
+      this.rejectedTargetState.set(null);
+      this.radar.scanAt(coord);
+    } else {
+      this.fireAt(coord);
+    }
+  }
+
+  /**
+   * Fires at `coord` on the computer's board. A cell already fired at is rejected instead.
+   * Ignored while a radar scan is showing, so its result can't be clicked through.
+   */
   fireAt(coord: Coord): void {
-    if (!this.active()) return;
+    if (!this.active() || this.radar.scanning()) return;
     if (!this.game.canFire(PLAYER, coord)) {
       this.rejectedTargetState.set(coord);
       return;
@@ -59,6 +77,7 @@ export class PlayerTurn implements SeatController {
 
   private end(): void {
     this.clock.stop();
+    this.radar.stop();
     this.handoff.finish();
   }
 }

@@ -20,10 +20,11 @@ Add `interceptors/` when an HTTP backend exists.
 | ----------------- | ----------------------------------------------------------------------------------------------- |
 | `GameStore`       | The game state. Wraps every rule call from `@sinkmyship/game`; no timers, no decisions.         |
 | `PlayerPlacement` | The player's placement: selected ship, blocks, Remove, Ready, the five-minute clock.            |
-| `PlayerTurn`      | The player's battle turn: firing at the computer's board and the 40-second turn clock.          |
+| `PlayerTurn`      | The player's battle turn: firing at the computer's board and the 10-second turn clock.          |
 | `ComputerPlayer`  | The computer: random fleet, firing three seconds into its turn. Aiming is `chooseShot` (rules). |
 | `MatchController` | Starts a game and decides who acts next. Swap `ComputerPlayer` for a network seat here later.   |
 | `ScoreKeeper`     | Each side's score, replayed from the game log through `scoreLog` (rules). Holds no state.       |
+| `PlayerRadar`     | The player's Radar: aiming, the scan (`useRadar`, rules) and its 2-second overlay timer.        |
 
 Placement, turn and computer services take an `onDone` callback from `MatchController` rather than
 injecting it, so the dependencies only point one way.
