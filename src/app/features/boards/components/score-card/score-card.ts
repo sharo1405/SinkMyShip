@@ -1,7 +1,7 @@
 import { Component, computed, input } from '@angular/core';
 import type { SeatScore } from '@sinkmyship/game';
 
-/** The pop-up note for a shot that earned a bonus or a penalty. */
+/** The pop-up note for a shot that earned a bonus or a penalty... */
 interface Badge {
   /** The side's shot count, so each new triggering shot gets a fresh badge. */
   readonly shot: number;
