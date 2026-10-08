@@ -236,6 +236,39 @@ describe('BattlePage', () => {
     expect(root.querySelectorAll('[id^="computer-"].ship').length).toBe(0);
   });
 
+  it("shows each side's score above its board once the battle starts, player first", async () => {
+    const { root, game, button, enemyCell, click, computerTurn, placeFleet } = await setup('6x6');
+    const card = (name: string) => root.querySelector(`[role="group"][aria-label="${name}"]`);
+    /** A card's visible parts (label, points, badge), joined by single spaces. */
+    const score = (name: string) =>
+      [...(card(name)?.children ?? [])]
+        .map((part) => part.textContent?.trim())
+        .filter(Boolean)
+        .join(' ');
+    expect(card('Your score')).toBeNull();
+
+    await placeFleet();
+    await click(button('Ready'));
+    expect(score('Your score')).toBe('Your score 0 pts');
+    expect(score("Computer's score")).toBe("Computer's score 0 pts");
+    const order = [...root.querySelectorAll('[role="group"][aria-label$="score"]')].map((c) =>
+      c.getAttribute('aria-label'),
+    );
+    expect(order).toEqual(['Your score', "Computer's score"]);
+    expect(card('Your score')?.closest('section')?.querySelector('#player-A1')).not.toBeNull();
+    expect(
+      card("Computer's score")?.closest('section')?.querySelector('#computer-A1'),
+    ).not.toBeNull();
+
+    const target = game.computerBoard()?.ships[0]?.cells[0];
+    if (!target) throw new Error('No computer ship');
+    await click(enemyCell(target));
+    expect(score('Your score')).toBe('Your score 1 pt');
+
+    await computerTurn();
+    expect(score("Computer's score")).toMatch(/^Computer's score [01] pts?$/);
+  });
+
   it('borders a repeat shot red instead of firing again', async () => {
     const { root, button, enemyCell, click, computerTurn, placeFleet, game } = await setup('6x6');
     await placeFleet();

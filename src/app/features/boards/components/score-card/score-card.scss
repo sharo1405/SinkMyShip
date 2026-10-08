@@ -1,0 +1,69 @@
+:host {
+  display: block;
+}
+
+.score {
+  display: grid;
+  grid-template-columns: auto auto 9rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-grid-line);
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.points {
+  font-size: 1.5rem;
+}
+
+.unit {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  animation: score-pop 2.5s ease-out forwards;
+}
+
+.bonus {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.penalty {
+  background: var(--color-hit);
+  color: #ffffff;
+}
+
+@keyframes score-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  20%,
+  75% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* No pop or fade: the badge simply stays until the side's next shot. */
+@media (prefers-reduced-motion: reduce) {
+  .badge {
+    animation: none;
+  }
+}

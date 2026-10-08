@@ -1,0 +1,13 @@
+<div class="score" role="group" [attr.aria-label]="label()">
+  <span class="label">{{ label() }}</span>
+  <span class="points"
+    >{{ score().points }} <span class="unit">{{ unit() }}</span></span
+  >
+  <span class="badge-slot">
+    @for (badge of badges(); track badge.shot) {
+      <span class="badge" [class.bonus]="badge.bonus" [class.penalty]="!badge.bonus">
+        {{ badge.text }}
+      </span>
+    }
+  </span>
+</div>

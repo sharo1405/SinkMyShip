@@ -13,14 +13,23 @@
 
   <h1>Battle</h1>
   @if (size(); as size) {
+    @let showScores = game.phase() === 'battle' || game.phase() === 'over';
     <div class="boards">
       <section class="side">
+        @if (showScores) {
+          <app-score-card label="Your score" [score]="scores.player()" />
+        }
         <app-player-board [size]="size" [shipColor]="shipColor()" />
         @if (game.phase() === 'placing') {
           <app-placement-controls [shipColor]="shipColor()" />
         }
       </section>
-      <app-computer-board [size]="size" />
+      <section class="side">
+        @if (showScores) {
+          <app-score-card label="Computer's score" [score]="scores.computer()" />
+        }
+        <app-computer-board [size]="size" />
+      </section>
     </div>
 
     <app-battle-status />
